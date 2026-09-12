@@ -34,6 +34,64 @@ function change(dom, element, value, event = "change") {
   element.dispatchEvent(new dom.window.Event(event, {bubbles: true}));
 }
 
+test("report sections expose project, destination, diagnostic and complete scan data", () => {
+  const {dom, document, errors} = openReport();
+  try {
+    const data = JSON.parse(document.getElementById("report-data").textContent);
+    for (const view of ["projects", "destinations", "coverage", "metadata", "requests"]) {
+      document.querySelector(`[data-view="${view}"]`).click();
+      assert.equal(document.querySelectorAll("main > section:not([hidden])").length, 1);
+      assert.equal(document.querySelector("main > section:not([hidden])").id, `view-${view}`);
+      assert.equal(document.querySelector('[aria-current="page"]').dataset.view, view);
+    }
+    assert.equal(document.querySelectorAll("#project-records article").length, data.projects.length);
+    assert.equal(document.querySelectorAll("#destination-records article").length, data.destinations.length);
+    assert.deepEqual(JSON.parse(document.getElementById("raw-data").textContent), data);
+    for (const diagnostic of data.diagnostics) {
+      assert.ok(document.getElementById("diagnostics").textContent.includes(diagnostic.code));
+    }
+    document.querySelector('[data-view="projects"]').click();
+    document.querySelector("#project-records button").click();
+    assert.equal(document.getElementById("view-requests").hidden, false);
+    assert.equal(document.getElementById("project").value, data.projects[0].id);
+    assert.equal(document.querySelectorAll("#calls tr").length,
+      data.calls.filter(call => call.project_id === data.projects[0].id).length);
+    assert.deepEqual(errors, []);
+  } finally { dom.window.close(); }
+});
+
+test("theme switch defaults to dark and preserves report navigation and selection", () => {
+  const {dom, document, errors} = openReport();
+  try {
+    const toggle = document.getElementById("theme-toggle");
+    assert.equal(document.documentElement.dataset.theme, "dark");
+    document.querySelector("#calls button").click();
+    const request = document.querySelector("#detail .url").textContent;
+    for (const theme of ["light", "dark"]) {
+      toggle.click();
+      assert.equal(document.documentElement.dataset.theme, theme);
+      assert.equal(toggle.getAttribute("aria-checked"), String(theme === "dark"));
+      assert.equal(document.querySelector("#detail .url").textContent, request);
+    }
+    assert.deepEqual(errors, []);
+  } finally { dom.window.close(); }
+});
+
+test("empty scans provide explicit empty states in each inventory", () => {
+  const data = {tool: "ServiceLense", schema_version: 1, projects: [], destinations: [],
+    calls: [], diagnostics: [], summary: {projects: 0, calls: 0, destinations: 0, resolved: 0, partial: 0, unresolved: 0}};
+  const source = html.replace(/(<script id="report-data" type="application\/json">)[\s\S]*?(<\/script>)/,
+    (_, a, b) => a + JSON.stringify(data) + b);
+  const {dom, document, errors} = openReport(source);
+  try {
+    assert.match(document.getElementById("project-records").textContent, /No projects scanned/);
+    assert.match(document.getElementById("destination-records").textContent, /No destinations found/);
+    assert.match(document.getElementById("diagnostics").textContent, /No diagnostics reported/);
+    assert.equal(document.getElementById("no-calls").classList.contains("hidden"), false);
+    assert.deepEqual(errors, []);
+  } finally { dom.window.close(); }
+});
+
 test("report renders graph and every call without resources or network APIs", () => {
   const {dom, document, attempts, errors} = openReport();
   try {
