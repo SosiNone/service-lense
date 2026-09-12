@@ -1,4 +1,6 @@
 import json
+import pytest
+import webbrowser
 from pathlib import Path
 
 from servicelense.cli import main, read_profile, save_profile, select_projects
@@ -62,3 +64,47 @@ def test_empty_scan_is_a_valid_report(make_project, tmp_path):
     assert main(["scan", str(root), "--all", "--out", str(tmp_path / "out")]) == 0
     data = json.loads((tmp_path / "out/dependencies.json").read_text())
     assert data["summary"]["calls"] == 0
+
+
+def test_scan_opens_completed_local_report(make_project, tmp_path, browser_open):
+    root = make_project({"main.py": ""})
+    out = tmp_path / "report with spaces #1"
+
+    def open_report(url, new):
+        assert (out / "report.html").is_file()
+        assert (out / "dependencies.json").is_file()
+        assert url == (out / "report.html").as_uri()
+        assert new == 2
+        return True
+
+    browser_open.side_effect = open_report
+    assert main(["scan", str(root), "--all", "--out", str(out)]) == 0
+    browser_open.assert_called_once()
+
+
+def test_no_open_still_writes_report(make_project, tmp_path, browser_open):
+    root = make_project({"main.py": ""})
+    out = tmp_path / "out"
+    assert main(["scan", str(root), "--all", "--no-open", "--out", str(out)]) == 0
+    assert (out / "report.html").is_file()
+    browser_open.assert_not_called()
+
+
+@pytest.mark.parametrize("failure", [False, OSError("no browser"), webbrowser.Error("no browser")])
+def test_browser_failure_keeps_scan_successful(make_project, tmp_path, browser_open, capsys, failure):
+    root = make_project({"main.py": ""})
+    out = tmp_path / "out"
+    if isinstance(failure, Exception):
+        browser_open.side_effect = failure
+    else:
+        browser_open.return_value = failure
+    assert main(["scan", str(root), "--all", "--out", str(out)]) == 0
+    assert (out / "report.html").is_file()
+    captured = capsys.readouterr()
+    assert str(out / "report.html") in captured.out
+    assert "open the report path above manually" in captured.err
+
+
+def test_invalid_scan_does_not_open_browser(tmp_path, browser_open):
+    assert main(["scan", str(tmp_path / "missing"), "--all"]) == 2
+    browser_open.assert_not_called()

@@ -32,7 +32,7 @@ Then scan the included example:
 servicelense scan ./examples/workspace --all --out ./reports/quickstart
 ```
 
-Open `reports/quickstart/report.html` directly in your browser to explore the three-project dependency map. Select a call or graph edge to see its source evidence. The same output directory also contains `dependencies.json` for programmatic use.
+The scan automatically opens `reports/quickstart/report.html` in your default browser to explore the three-project dependency map. Select a call or graph edge to see its source evidence. The same output directory also contains `dependencies.json` for programmatic use.
 
 To scan your own code, replace the example path with your backend directory:
 
@@ -40,7 +40,7 @@ To scan your own code, replace the example path with your backend directory:
 servicelense scan ./path/to/backend --all --out ./reports/backend
 ```
 
-Open `reports/backend/report.html` to view the results. `--all` scans every discovered project; omit it to choose projects interactively. Initial setup requires internet access, but scans run offline. No API keys or Node.js installation are needed.
+The scan opens `reports/backend/report.html` automatically. `--all` scans every discovered project; omit it to choose projects interactively. Initial setup requires internet access, but scans run offline. No API keys or Node.js installation are needed.
 
 ### Operations overview
 
@@ -56,7 +56,8 @@ After setup, all scan, profile and report operations run locally without network
 | Save project selection for repeat scans | `servicelense scan ./backend --save-profile ./scan-profile.json` |
 | Repeat a scan from a saved profile | `servicelense scan --profile ./scan-profile.json` |
 | Scan with environment-specific configuration | Add configuration overlays to the saved profile, then scan with `--profile`; see [configuration](#environment-specific-configuration) |
-| View the dependency map | Open `report.html` in the output directory directly in your browser |
+| View the dependency map | The scan opens `report.html` automatically; you can also open it from the output directory |
+| Generate reports without opening a browser | `servicelense scan ./backend --all --no-open` |
 | Search and filter findings | Use the report's search field and project, language and resolution filters |
 | Inspect source evidence | Select a call, graph edge or destination; select a project node to filter the map |
 | Review analysis limitations and diagnostics | Expand the report's diagnostics section |
@@ -64,7 +65,7 @@ After setup, all scan, profile and report operations run locally without network
 | Show general or scan-specific help | `servicelense --help` or `servicelense scan --help` |
 | Show the installed version | `servicelense --version` |
 
-The default output directory is `./reports`. Interactive selection accepts project numbers to toggle, `all`, `none`, Enter to scan, or `q` to cancel. For unattended runs, use `--all` or `--profile`. A profile supplies the project roots and cannot be combined with root arguments or `--all`.
+The default output directory is `./reports`. Interactive selection accepts project numbers to toggle, `all`, `none`, Enter to scan, or `q` to cancel. For unattended runs, use `--all` or `--profile` and add `--no-open` to skip launching a browser. A profile supplies the project roots and cannot be combined with root arguments or `--all`.
 
 ## Install from a Git checkout
 
@@ -88,14 +89,14 @@ servicelense scan ./backend ./other-repo --out ./reports --save-profile ./scan-p
 
 The CLI recursively discovers projects, shows their paths and languages, and lets you toggle numbered selections. All are initially selected. Enter `none`, `all`, numbers separated by spaces or commas, or `q` to cancel. Press Enter to scan the current selection.
 
-For unattended scans:
+For unattended scans, suppress the browser launch with `--no-open`:
 
 ```sh
-servicelense scan ./backend --all --out ./reports
-servicelense scan --profile ./scan-profile.json --out ./reports
+servicelense scan ./backend --all --no-open --out ./reports
+servicelense scan --profile ./scan-profile.json --no-open --out ./reports
 ```
 
-Open **`reports/report.html`** directly in your browser. Search and filter by project, language or resolution, then select a call or graph edge to view its source location and evidence chain. Project nodes filter the map; destination nodes and edges select a representative call. The table contains every finding behind aggregated edges.
+By default, scans open **`reports/report.html`** in your browser using a local file URL; with `--no-open`, open that file manually. If no browser is available, the scan still succeeds and prints the report path so you can open it manually. Search and filter by project, language or resolution, then select a call or graph edge to view its source location and evidence chain. Project nodes filter the map; destination nodes and edges select a representative call. The table contains every finding behind aggregated edges.
 
 Try the included three-project example:
 
@@ -175,7 +176,7 @@ Optional report DOM tests require Node.js and development-only npm dependencies.
 
 ```sh
 npm ci
-servicelense scan examples/workspace --all --out reports/example
+servicelense scan examples/workspace --all --no-open --out reports/example
 npm run test:report
 ```
 

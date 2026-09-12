@@ -1,5 +1,6 @@
 from pathlib import Path
 import socket
+from unittest.mock import Mock
 import pytest
 
 
@@ -25,3 +26,10 @@ def make_project(tmp_path):
             path.write_text(content, encoding="utf-8")
         return root
     return make
+
+
+@pytest.fixture(autouse=True)
+def browser_open(monkeypatch):
+    opener = Mock(return_value=True)
+    monkeypatch.setattr("servicelense.cli.webbrowser.open", opener)
+    return opener

@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
+import webbrowser
 
 from . import __version__
 from .discovery import discover
@@ -83,6 +84,7 @@ def parser() -> argparse.ArgumentParser:
     command = subcommands.add_parser("scan", help="Discover projects and produce an offline dependency report")
     command.add_argument("roots", nargs="*", type=Path, help="Local folders to discover projects under")
     command.add_argument("--out", type=Path, default=Path("reports"), help="Output directory (default: reports)")
+    command.add_argument("--no-open", action="store_true", help="Generate the report without opening a browser")
     selection = command.add_mutually_exclusive_group()
     selection.add_argument("--all", action="store_true", help="Select every discovered project without prompting")
     selection.add_argument("--profile", type=Path, help="Load saved project selection and per-project configuration overlays")
@@ -132,6 +134,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"JSON:   {(args.out / 'dependencies.json').resolve()}")
         if data["diagnostics"]:
             print(f"{len(data['diagnostics'])} diagnostic(s); see the report for coverage gaps.")
+        if not args.no_open:
+            try:
+                opened = webbrowser.open((args.out / "report.html").resolve().as_uri(), new=2)
+            except (OSError, webbrowser.Error):
+                opened = False
+            if not opened:
+                print("Could not open the browser; open the report path above manually.", file=sys.stderr)
         return 0
     except (ValueError, OSError) as error:
         # Never echo JSONDecodeError text, which can contain configuration content.
