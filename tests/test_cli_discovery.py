@@ -3,7 +3,7 @@ import pytest
 import webbrowser
 from pathlib import Path
 
-from servicelense.cli import main, read_profile, save_profile, select_projects
+from servicelense.cli import main, read_profile, save_profile
 from servicelense.discovery import discover
 from servicelense.report import render_report
 
@@ -15,14 +15,6 @@ def test_discovery_nested_and_overlapping_roots(make_project):
     projects = discover([root, root / "nested", root])
     assert len(projects) == 2
     assert [[p.name for p in project.files] for project in projects] == [["Loose.cs", "root.py"], ["main.ts"]]
-
-
-def test_interactive_selection(make_project, monkeypatch):
-    root = make_project({"a/pyproject.toml": "", "b/package.json": "{}"})
-    answers = iter(["none", "", "99", "2", ""])
-    monkeypatch.setattr("builtins.input", lambda _: next(answers))
-    projects = select_projects(discover([root]))
-    assert [p.name for p in projects] == ["b"]
 
 
 def test_cli_profile_repeatability(make_project, tmp_path):

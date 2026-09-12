@@ -11,33 +11,7 @@ from .discovery import discover
 from .model import Project
 from .report import write_report
 from .scan import scan
-
-
-def select_projects(projects: list[Project]) -> list[Project]:
-    selected = set(range(len(projects)))
-    while True:
-        print("\nDiscovered projects:")
-        for index, project in enumerate(projects):
-            mark = "x" if index in selected else " "
-            print(f"  {index + 1:>3}. [{mark}] {project.key} ({', '.join(project.languages) or 'no supported source'})\n         {project.root}")
-        print("\nEnter numbers to toggle, 'all', 'none', or press Enter to scan. 'q' cancels.")
-        choice = input("> ").strip().lower()
-        if choice == "q":
-            raise KeyboardInterrupt
-        if not choice:
-            if selected:
-                return [p for i, p in enumerate(projects) if i in selected]
-            print("Select at least one project.")
-        elif choice in {"all", "none"}:
-            selected = set(range(len(projects))) if choice == "all" else set()
-        else:
-            try:
-                indices = {int(n) - 1 for n in choice.replace(",", " ").split()}
-                if not indices or not indices <= set(range(len(projects))):
-                    raise ValueError
-                selected ^= indices
-            except ValueError:
-                print("Use project numbers from the list, separated by spaces or commas.")
+from .selection import select_projects
 
 
 def read_profile(path: Path) -> tuple[list[Path], dict[str, list[Path]]]:

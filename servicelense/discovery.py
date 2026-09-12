@@ -8,7 +8,7 @@ from .model import Project
 EXTENSIONS = {".cs": "csharp", ".py": "python", ".ts": "typescript", ".tsx": "typescript"}
 EXCLUDED = {".git", ".hg", ".svn", ".tools", ".venv", "venv", "env", "node_modules", "vendor",
             "bin", "obj", "build", "dist", "coverage", "__pycache__", ".pytest_cache", ".mypy_cache",
-            ".next", ".nuxt", ".tox", "site-packages", "generated"}
+            ".angular", ".next", ".nuxt", ".tox", "site-packages", "generated"}
 
 
 def is_source(path: Path) -> bool:
