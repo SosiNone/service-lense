@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "servicelense"
+version = "0.1.0"
+description = "An offline, source-based map of HTTP dependencies across backend projects"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  # 0.26.0 crashed during GC on a Windows self-scan; retain the tested binding.
+  "tree-sitter==0.25.2",
+  "tree-sitter-python==0.25.0",
+  "tree-sitter-typescript==0.23.2",
+  "tree-sitter-c-sharp==0.23.5",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+servicelense = "servicelense.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["servicelense*"]
+
+[tool.setuptools.package-data]
+servicelense = ["assets/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

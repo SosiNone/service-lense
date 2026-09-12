@@ -1,0 +1,6 @@
+include PROGRESS.md
+include uv.lock .python-version
+include package.json package-lock.json
+recursive-include servicelense/assets *.html
+recursive-include tests *.py *.cjs
+recursive-include examples *.py *.cs *.ts *.toml *.csproj *.json .env

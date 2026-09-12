@@ -1,0 +1,4 @@
+[project]
+name = "checkout"
+version = "0.0.0"
+# Fixture only. ServiceLense never installs or executes this application.
