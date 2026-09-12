@@ -156,25 +156,43 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
     search.buffer.on_text_changed += changed
 
     def status():
-        return f" {len(tree.selected)} / {len(projects)} projects selected  |  Enter: scan selected  |  {tree.message}"
+        mode = "Editing search" if searching() else "Filtered results" if tree.query else "Project tree"
+        message = f"  |  {tree.message}" if tree.message else ""
+        return f" {len(tree.selected)} of {len(projects)} projects selected  |  {mode}{message}"
 
     def detail():
         node = tree.current()
         return " " + display(str(node.path)) if node else ""
 
+    @keys.add("k", filter=~searching)
+    @keys.add("j", filter=~searching)
+    @keys.add("c-u", filter=~searching)
+    @keys.add("c-d", filter=~searching)
     @keys.add("up", filter=~searching)
     @keys.add("down", filter=~searching)
     @keys.add("pageup", filter=~searching)
     @keys.add("pagedown", filter=~searching)
     def move(event):
-        amount = {"up": -1, "down": 1, "pageup": -10, "pagedown": 10}[event.key_sequence[0].key]
+        key = event.key_sequence[0].key
+        half_page = max(1, app.output.get_size().rows // 2)
+        amount = {"up": -1, "k": -1, "down": 1, "j": 1, "pageup": -10, "pagedown": 10,
+                  "c-u": -half_page, "c-d": half_page}[key]
         tree.cursor += amount
         tree.rows()
 
+    @keys.add("g", "g", filter=~searching)
+    @keys.add("G", filter=~searching)
+    @keys.add("home", filter=~searching)
+    @keys.add("end", filter=~searching)
+    def jump(event):
+        tree.cursor = len(tree.rows()) - 1 if event.key_sequence[0].key in {"G", "end"} else 0
+
+    @keys.add("h", filter=~searching)
+    @keys.add("l", filter=~searching)
     @keys.add("left", filter=~searching)
     @keys.add("right", filter=~searching)
     def fold(event):
-        tree.fold(event.key_sequence[0].key == "right")
+        tree.fold(event.key_sequence[0].key in {"right", "l"})
 
     @keys.add(" ", filter=~searching)
     def toggle(event):
@@ -202,7 +220,7 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
     def focus(event):
         app.layout.focus(control if searching() else search)
 
-    @keys.add("escape")
+    @keys.add("escape", eager=True)
     def clear_search(event):
         search.text = ""
         app.layout.focus(control)
@@ -219,9 +237,34 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
     @keys.add("Q", filter=~searching)
     @keys.add("q", filter=~searching)
     @keys.add("c-c")
-    @keys.add("c-d")
     def cancel(event):
         app.exit(exception=KeyboardInterrupt())
+
+    def help_text():
+        def line(label, actions):
+            parts = [("class:help-label", f" {label:<10}")]
+            for i, (key, description) in enumerate(actions):
+                if i:
+                    parts.append(("", "   "))
+                parts.extend([("class:key", f" {key} "), ("", f" {description}")])
+            return parts + [("", "\n")]
+
+        if searching():
+            parts = line("Search", [("Type", "filter by path or language")])
+            parts += line("Results", [("Enter / Tab", "leave search, keep filter")])
+            parts += line("Reset", [("Esc", "clear filter and leave search"), ("Ctrl+C", "cancel")])
+            return parts + [("class:muted", " Selected projects stay selected, even when hidden by the filter.")]
+        parts = line("Navigate", [("Arrows/hjkl", "move/fold"), ("gg/G", "first/last")])
+        parts += line("Select", [("Space", "toggle"), ("B", "branch"), ("A/N", "all/none")])
+        parts += line("Actions", [("/", "search"), ("Enter", "scan"), ("Q", "cancel")])
+        if tree.query:
+            hint = " Esc clears the filter. Branch selection includes hidden projects."
+        else:
+            node = tree.current()
+            hint = (" Space toggles this folder's entire branch, including nested projects."
+                    if node and node.project is None else
+                    " Space toggles this project only. B includes its nested projects.")
+        return parts + [("class:muted", hint)]
 
     app = Application(
         layout=Layout(HSplit([
@@ -230,16 +273,12 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
             search,
             Window(control, wrap_lines=False, right_margins=[ScrollbarMargin(display_arrows=True)]),
             Window(FormattedTextControl(detail), height=2, wrap_lines=True, style="class:muted"),
-            Window(FormattedTextControl(
-                " Up/Down: move  Left/Right: fold  Space: toggle project  B: branch\n"
-                " A: all  N: none  /: search  Tab: search/tree  Esc: clear search\n"
-                " Space on a folder toggles its branch, including hidden projects.\n"
-                " Enter: scan selected  Q: cancel  |  Search preserves selection."),
-                height=4, wrap_lines=True, style="class:muted"),
+            Window(FormattedTextControl(help_text), height=4, wrap_lines=True),
         ]), focused_element=control),
         key_bindings=keys, full_screen=True, input=input, output=output,
         style=Style.from_dict({"title": "bg:#142c35 #ffffff bold", "status": "#60c8b7 bold",
-                               "current": "bg:#087f79 #ffffff bold", "muted": "#888888"}),
+                               "current": "bg:#087f79 #ffffff bold", "muted": "#888888",
+                               "key": "bg:#263e47 #ffffff bold", "help-label": "#60c8b7 bold"}),
     )
     return app
 

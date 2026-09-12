@@ -65,7 +65,7 @@ After setup, all scan, profile and report operations run locally without network
 | Show general or scan-specific help | `servicelense --help` or `servicelense scan --help` |
 | Show the installed version | `servicelense --version` |
 
-The default output directory is `./reports`. The interactive tree supports arrow-key navigation, Space to toggle a project, `B` to toggle a whole branch, `A` to select all, `N` to clear selection, `/` to search, Enter to scan, and `Q` to cancel. For unattended runs, use `--all` or `--profile` and add `--no-open` to skip launching a browser. A profile supplies the project roots and cannot be combined with root arguments or `--all`.
+The default output directory is `./reports`. The interactive tree supports arrow-key or Vim navigation (`hjkl`), Space to toggle a project, `B` to toggle a whole branch, `A` to select all, `N` to clear selection, `/` to search, Enter to scan, and `Q` to cancel. For unattended runs, use `--all` or `--profile` and add `--no-open` to skip launching a browser. A profile supplies the project roots and cannot be combined with root arguments or `--all`.
 
 ## Install from a Git checkout
 
@@ -91,16 +91,21 @@ The CLI opens a terminal project tree with nested folders, project languages, br
 
 | Key | Action |
 | --- | --- |
-| Up / Down, Page Up / Page Down | Move through the tree |
-| Left / Right | Collapse / expand a branch; Left on a collapsed item moves to its parent |
+| Up / Down or k / j | Move through the tree |
+| Page Up / Page Down | Move ten rows up / down |
+| Ctrl+U / Ctrl+D | Move half a terminal screen up / down |
+| gg / G, Home / End | Jump to the first / last visible row |
+| Left / Right or h / l | Collapse / expand a branch; Left or `h` on a collapsed item moves to its parent |
 | Space | Toggle only the focused project; on a grouping folder, toggle its whole branch |
 | B | Toggle the focused branch, including its parent project and all nested projects |
 | A / N | Select all projects / clear all selections |
 | / | Search project paths and languages; matching ancestors remain visible |
-| Tab or Enter while searching | Return to the tree (Tab also focuses search) |
-| Esc | Clear the search and return to the tree |
+| Tab or Enter while searching | Leave search and return to results, keeping the filter; this does not start a scan |
+| Esc | Clear the filter and return to the tree, from either search or results |
 | Enter in the tree | Scan the selected projects |
 | Q or Ctrl+C | Cancel |
+
+The keyboard help changes while editing search. Vim navigation keys are treated as ordinary text in the search field. Press `/` or Tab from the tree to edit the filter again.
 
 A parent project's checkbox controls only that project's own files. Nested projects have independent checkboxes; use `B` to include or exclude them together. Folder checkboxes show `[-]` for a partially selected branch. Searching preserves selections, including hidden projects; branch toggles and `A` / `N` also affect hidden projects. The selected count always shows the total that will be scanned. Clear the search before collapsing branches.
 

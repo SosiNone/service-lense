@@ -61,6 +61,12 @@ def test_filter_and_collapse_preserve_hidden_selection(projects):
     ("n\x1b[B \r", [1]),  # Space on grouping folder selects its subtree.
     ("n/child\r\x1b[B\x1b[B \r", [1]),
     ("\x1b[D\x1b[Cb a\r", [0, 1, 2]),
+    ("nG \r", [2]),
+    ("nGgg \r", [0]),
+    ("njjk \r", [1]),
+    ("nhjljj \r", [1]),
+    ("n\x04 \r", [2]),
+    ("n\x04\x15 \r", [0]),
 ])
 def test_keyboard_selection(projects, keys, expected, tui_loop):
     with create_pipe_input() as pipe:
@@ -76,6 +82,65 @@ def test_keyboard_cancel(projects, tui_loop):
         pipe.send_text("q")
         with pytest.raises(KeyboardInterrupt):
             tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
+
+
+@pytest.mark.parametrize("exit_key, remaining_query", [("\r", "child"), ("\t", "child"), ("\x1b", "")])
+def test_search_exit_returns_focus_without_scanning(projects, tui_loop, exit_key, remaining_query):
+    async def wait_until(predicate):
+        async def poll():
+            while not predicate():
+                await asyncio.sleep(0.01)
+        await asyncio.wait_for(poll(), timeout=2)
+
+    async def exercise(pipe, app):
+        running = asyncio.create_task(app.run_async())
+        try:
+            pipe.send_text("/child")
+            await wait_until(lambda: app.current_buffer.text == "child")
+            search_control = app.layout.current_control
+            pipe.send_text(exit_key)
+            await wait_until(lambda: app.layout.current_control is not search_control)
+            assert not running.done(), "Leaving search must not start the scan"
+            assert search_control.buffer.text == remaining_query
+            # Navigation now targets the tree. Enter/Tab retain the filter;
+            # Escape clears it, so G reaches a different project.
+            pipe.send_text("nG \r")
+            result = await asyncio.wait_for(running, timeout=2)
+            assert result == [projects[1 if remaining_query else 2]]
+        finally:
+            if not running.done():
+                running.cancel()
+                await asyncio.gather(running, return_exceptions=True)
+
+    with create_pipe_input() as pipe:
+        app = selection_app(projects, input=pipe, output=DummyOutput())
+        tui_loop.run_until_complete(exercise(pipe, app))
+
+
+def test_vim_letters_are_text_in_search(projects, tui_loop):
+    async def exercise(pipe, app):
+        running = asyncio.create_task(app.run_async())
+        try:
+            pipe.send_text("/hjklggG")
+            for _ in range(100):
+                if app.current_buffer.text == "hjklggG":
+                    break
+                await asyncio.sleep(0.01)
+            assert app.current_buffer.text == "hjklggG"
+            pipe.send_text("\t")
+            # Esc from the results also clears a filter with no matches.
+            pipe.send_text("\x1b")
+            await asyncio.sleep(0.7)
+            pipe.send_text("\r")
+            assert await asyncio.wait_for(running, timeout=2) == projects
+        finally:
+            if not running.done():
+                running.cancel()
+                await asyncio.gather(running, return_exceptions=True)
+
+    with create_pipe_input() as pipe:
+        app = selection_app(projects, input=pipe, output=DummyOutput())
+        tui_loop.run_until_complete(exercise(pipe, app))
 
 
 def test_angular_cache_not_discovered(make_project):
