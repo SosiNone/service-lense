@@ -62,6 +62,9 @@ def test_filter_and_collapse_preserve_hidden_selection(projects):
     ("n/child\r\x1b[B\x1b[B \r", [1]),
     ("\x1b[D\x1b[Cb a\r", [0, 1, 2]),
     ("nG \r", [2]),
+    ("nx\r", [0]),
+    ("njx\r", [1]),
+    ("nx x\r", [0]),
     ("nGgg \r", [0]),
     ("njjk \r", [1]),
     ("nhjljj \r", [1]),
@@ -121,12 +124,12 @@ def test_vim_letters_are_text_in_search(projects, tui_loop):
     async def exercise(pipe, app):
         running = asyncio.create_task(app.run_async())
         try:
-            pipe.send_text("/hjklggG")
+            pipe.send_text("/hjklggGx")
             for _ in range(100):
-                if app.current_buffer.text == "hjklggG":
+                if app.current_buffer.text == "hjklggGx":
                     break
                 await asyncio.sleep(0.01)
-            assert app.current_buffer.text == "hjklggG"
+            assert app.current_buffer.text == "hjklggGx"
             pipe.send_text("\t")
             # Esc from the results also clears a filter with no matches.
             pipe.send_text("\x1b")

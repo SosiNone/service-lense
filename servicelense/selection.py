@@ -194,6 +194,7 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
     def fold(event):
         tree.fold(event.key_sequence[0].key in {"right", "l"})
 
+    @keys.add("x", filter=~searching)
     @keys.add(" ", filter=~searching)
     def toggle(event):
         tree.toggle()
@@ -232,7 +233,7 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
         elif tree.selected:
             app.exit(result=[p for i, p in enumerate(projects) if i in tree.selected])
         else:
-            tree.message = "Select at least one project with Space or A."
+            tree.message = "Select at least one project with Space, x or A."
 
     @keys.add("Q", filter=~searching)
     @keys.add("q", filter=~searching)
@@ -255,15 +256,15 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
             parts += line("Reset", [("Esc", "clear filter and leave search"), ("Ctrl+C", "cancel")])
             return parts + [("class:muted", " Selected projects stay selected, even when hidden by the filter.")]
         parts = line("Navigate", [("Arrows/hjkl", "move/fold"), ("gg/G", "first/last")])
-        parts += line("Select", [("Space", "toggle"), ("B", "branch"), ("A/N", "all/none")])
+        parts += line("Select", [("Space/x", "toggle"), ("B", "branch"), ("A/N", "all/none")])
         parts += line("Actions", [("/", "search"), ("Enter", "scan"), ("Q", "cancel")])
         if tree.query:
             hint = " Esc clears the filter. Branch selection includes hidden projects."
         else:
             node = tree.current()
-            hint = (" Space toggles this folder's entire branch, including nested projects."
+            hint = (" Space or x toggles this folder's entire branch, including nested projects."
                     if node and node.project is None else
-                    " Space toggles this project only. B includes its nested projects.")
+                    " Space or x toggles this project only. B includes its nested projects.")
         return parts + [("class:muted", hint)]
 
     app = Application(
