@@ -6,11 +6,30 @@ ServiceLense scans local C#, Python and TypeScript projects and produces an inte
 
 ## Quickstart
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then open a terminal in this checkout's root directory. Run these commands on Windows or Linux to install dependencies and scan the included example:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then open a terminal in this checkout's root directory. Install dependencies once:
 
 ```sh
 uv sync --locked
-uv run --locked --offline servicelense scan ./examples/workspace --all --out ./reports/quickstart
+```
+
+Activate the installed environment in each new terminal session. On Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation scripts, replace `servicelense` in the commands below with `.\.venv\Scripts\servicelense.exe`; no activation or policy change is needed.
+
+On Linux or macOS:
+
+```sh
+source .venv/bin/activate
+```
+
+Then scan the included example:
+
+```sh
+servicelense scan ./examples/workspace --all --out ./reports/quickstart
 ```
 
 Open `reports/quickstart/report.html` directly in your browser to explore the three-project dependency map. Select a call or graph edge to see its source evidence. The same output directory also contains `dependencies.json` for programmatic use.
@@ -18,28 +37,29 @@ Open `reports/quickstart/report.html` directly in your browser to explore the th
 To scan your own code, replace the example path with your backend directory:
 
 ```sh
-uv run --locked --offline servicelense scan ./path/to/backend --all --out ./reports/backend
+servicelense scan ./path/to/backend --all --out ./reports/backend
 ```
 
 Open `reports/backend/report.html` to view the results. `--all` scans every discovered project; omit it to choose projects interactively. Initial setup requires internet access, but scans run offline. No API keys or Node.js installation are needed.
 
 ## Install from a Git checkout
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then run these commands from your checkout on Windows or Linux:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then install dependencies from your checkout:
 
 ```sh
 uv sync --locked
-uv run --locked --offline servicelense --help
 ```
+
+Activate the environment as shown in the quickstart, then run `servicelense --help` to see the available options.
 
 uv manages `.venv` and installs the exact dependencies in `uv.lock`, including development tools. It can download Python automatically if needed; `.python-version` selects Python 3.12 for local development, while the package supports Python 3.11 or newer. Windows is the primary development platform; Linux uses the same code and is included in CI.
 
-Initial setup downloads Python dependencies and prebuilt parsers. Once synced, the `--offline` commands below prevent uv from accessing the network too. If dependencies change, run `uv sync --locked` while online before scanning again. There are no API keys, model downloads, application package restores, DNS checks, telemetry, or local web servers.
+Initial setup downloads Python dependencies and prebuilt parsers. After installation, run `servicelense` directly from the activated environment. Scans and reports are always offline; no flag is needed. If dependencies change, run `uv sync --locked` while online before scanning again. There are no API keys, model downloads, application package restores, DNS checks, telemetry, or local web servers.
 
 ## Explore projects
 
 ```sh
-uv run --locked --offline servicelense scan ./backend ./other-repo --out ./reports --save-profile ./scan-profile.json
+servicelense scan ./backend ./other-repo --out ./reports --save-profile ./scan-profile.json
 ```
 
 The CLI recursively discovers projects, shows their paths and languages, and lets you toggle numbered selections. All are initially selected. Enter `none`, `all`, numbers separated by spaces or commas, or `q` to cancel. Press Enter to scan the current selection.
@@ -47,8 +67,8 @@ The CLI recursively discovers projects, shows their paths and languages, and let
 For unattended scans:
 
 ```sh
-uv run --locked --offline servicelense scan ./backend --all --out ./reports
-uv run --locked --offline servicelense scan --profile ./scan-profile.json --out ./reports
+servicelense scan ./backend --all --out ./reports
+servicelense scan --profile ./scan-profile.json --out ./reports
 ```
 
 Open **`reports/report.html`** directly in your browser. Search and filter by project, language or resolution, then select a call or graph edge to view its source location and evidence chain. Project nodes filter the map; destination nodes and edges select a representative call. The table contains every finding behind aggregated edges.
@@ -56,10 +76,10 @@ Open **`reports/report.html`** directly in your browser. Search and filter by pr
 Try the included three-project example:
 
 ```sh
-uv run --locked --offline servicelense scan ./examples/workspace --all --out ./reports/example
+servicelense scan ./examples/workspace --all --out ./reports/example
 ```
 
-No environment activation is necessary. `uv run --locked --offline python -m servicelense` is equivalent to running the installed command through uv.
+With the environment activated, `python -m servicelense` is equivalent to `servicelense`. You can also run the executable without activation: `.\.venv\Scripts\servicelense.exe` on Windows or `./.venv/bin/servicelense` on Linux or macOS.
 
 ## Environment-specific configuration
 
@@ -127,11 +147,11 @@ uv run --locked --offline pytest
 uv build
 ```
 
-Optional report DOM tests require Node.js and development-only npm dependencies:
+Optional report DOM tests require Node.js and development-only npm dependencies. Activate the Python environment as shown in the quickstart before running these commands:
 
 ```sh
 npm ci
-uv run --locked --offline servicelense scan examples/workspace --all --out reports/example
+servicelense scan examples/workspace --all --out reports/example
 npm run test:report
 ```
 
