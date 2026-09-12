@@ -42,6 +42,30 @@ servicelense scan ./path/to/backend --all --out ./reports/backend
 
 Open `reports/backend/report.html` to view the results. `--all` scans every discovered project; omit it to choose projects interactively. Initial setup requires internet access, but scans run offline. No API keys or Node.js installation are needed.
 
+### Operations overview
+
+After setup, all scan, profile and report operations run locally without network access. `scan` is the CLI's only subcommand; the options below control project selection and output.
+
+| Operation | Command or action |
+| --- | --- |
+| Install or refresh dependencies | `uv sync --locked` (may need internet access) |
+| Discover projects and choose which to scan | `servicelense scan ./backend` |
+| Scan every discovered project without prompting | `servicelense scan ./backend --all` |
+| Scan multiple folders | `servicelense scan ./backend ./other-repo --all` |
+| Choose the report output directory | `servicelense scan ./backend --all --out ./reports/backend` |
+| Save project selection for repeat scans | `servicelense scan ./backend --save-profile ./scan-profile.json` |
+| Repeat a scan from a saved profile | `servicelense scan --profile ./scan-profile.json` |
+| Scan with environment-specific configuration | Add configuration overlays to the saved profile, then scan with `--profile`; see [configuration](#environment-specific-configuration) |
+| View the dependency map | Open `report.html` in the output directory directly in your browser |
+| Search and filter findings | Use the report's search field and project, language and resolution filters |
+| Inspect source evidence | Select a call, graph edge or destination; select a project node to filter the map |
+| Review analysis limitations and diagnostics | Expand the report's diagnostics section |
+| Use results programmatically | Read `dependencies.json` in the output directory; generated with every report |
+| Show general or scan-specific help | `servicelense --help` or `servicelense scan --help` |
+| Show the installed version | `servicelense --version` |
+
+The default output directory is `./reports`. Interactive selection accepts project numbers to toggle, `all`, `none`, Enter to scan, or `q` to cancel. For unattended runs, use `--all` or `--profile`. A profile supplies the project roots and cannot be combined with root arguments or `--all`.
+
 ## Install from a Git checkout
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then install dependencies from your checkout:
