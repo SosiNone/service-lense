@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Local\\repos\\project-a\\examples\\workspace\\orders\\Orders.csproj": {}
+    "C:\\Users\\ramon\\work\\repos\\service-lense\\examples\\workspace\\orders\\Orders.csproj": {}
   },
   "projects": {
-    "C:\\Local\\repos\\project-a\\examples\\workspace\\orders\\Orders.csproj": {
+    "C:\\Users\\ramon\\work\\repos\\service-lense\\examples\\workspace\\orders\\Orders.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Local\\repos\\project-a\\examples\\workspace\\orders\\Orders.csproj",
+        "projectUniqueName": "C:\\Users\\ramon\\work\\repos\\service-lense\\examples\\workspace\\orders\\Orders.csproj",
         "projectName": "Orders",
-        "projectPath": "C:\\Local\\repos\\project-a\\examples\\workspace\\orders\\Orders.csproj",
+        "projectPath": "C:\\Users\\ramon\\work\\repos\\service-lense\\examples\\workspace\\orders\\Orders.csproj",
         "packagesPath": "C:\\Users\\ramon\\.nuget\\packages\\",
-        "outputPath": "C:\\Local\\repos\\project-a\\examples\\workspace\\orders\\obj\\",
+        "outputPath": "C:\\Users\\ramon\\work\\repos\\service-lense\\examples\\workspace\\orders\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\ramon\\AppData\\Roaming\\NuGet\\NuGet.Config"

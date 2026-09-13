@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "3Nle5gGneBc=",
+  "dgSpecHash": "c78WbSL3lTY=",
   "success": true,
-  "projectFilePath": "C:\\Local\\repos\\project-a\\examples\\workspace\\orders\\Orders.csproj",
+  "projectFilePath": "C:\\Users\\ramon\\work\\repos\\service-lense\\examples\\workspace\\orders\\Orders.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ramon\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.25\\microsoft.netcore.app.ref.8.0.25.nupkg.sha512",
     "C:\\Users\\ramon\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.25\\microsoft.windowsdesktop.app.ref.8.0.25.nupkg.sha512",
