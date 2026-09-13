@@ -203,3 +203,25 @@ test("map navigation zooms, pans, suppresses drag selection, and resets after fi
     assert.deepEqual(errors,[]);
   } finally {dom.window.close();}
 });
+
+
+test("map offers a return to all projects after selecting a project", () => {
+  const {dom, document, errors} = openReport();
+  try {
+    const back=document.getElementById("map-overview");
+    assert.equal(back.hidden,true);
+    change(dom,document.getElementById("status"),"resolved");
+    const count=document.querySelectorAll("#calls tr").length;
+    document.querySelector("#graph .node:not(.target)").dispatchEvent(new dom.window.MouseEvent("click",{bubbles:true}));
+    assert.equal(back.hidden,false);
+    assert.notEqual(document.getElementById("project").value,"");
+    document.getElementById("map-zoom-in").click();
+    back.click();
+    assert.equal(document.getElementById("project").value,"");
+    assert.equal(document.getElementById("status").value,"resolved");
+    assert.equal(document.querySelectorAll("#calls tr").length,count);
+    assert.equal(document.getElementById("map-zoom").textContent,"100%");
+    assert.equal(back.hidden,true);
+    assert.deepEqual(errors,[]);
+  } finally {dom.window.close();}
+});
