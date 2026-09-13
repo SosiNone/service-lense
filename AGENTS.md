@@ -11,3 +11,4 @@
 
 - Make it feel like a tool for developers rather than a product.
 - The report should display all gathered information but in structured manor, so it's intuative to use.
+- The user should not need to know any arguments to use the tools. It should be simple to run, and any further required inputs should gathered interactively through the TUI/CLI.
