@@ -1,4 +1,4 @@
-# ServiceLense implementation checkpoint
+# Service Lense implementation checkpoint
 
 ## Agreed scope
 - Python CLI named `servicelense`; Windows first, portable to Linux.

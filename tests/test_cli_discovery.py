@@ -26,7 +26,7 @@ def test_cli_profile_repeatability(make_project, tmp_path):
     first = (out / "dependencies.json").read_text()
     assert main(["scan", "--profile", str(profile), "--out", str(out)]) == 0
     assert first == (out / "dependencies.json").read_text()
-    assert "ServiceLense" in (out / "report.html").read_text(encoding="utf-8")
+    assert "Service Lense" in (out / "report.html").read_text(encoding="utf-8")
 
 
 def test_noninteractive_requires_selection(make_project, tmp_path, monkeypatch, capsys):

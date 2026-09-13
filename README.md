@@ -1,8 +1,8 @@
-# ServiceLense
+# Service Lense
 
 **Understand the HTTP connections hidden in your backend code and configuration.**
 
-ServiceLense scans local C#, Python and TypeScript projects and produces an interactive dependency map with source evidence. It does not build, import or execute the applications being analyzed. Scans and reports make no network requests.
+Service Lense scans local C#, Python and TypeScript projects and produces an interactive dependency map with source evidence. It does not build, import or execute the applications being analyzed. Scans and reports make no network requests.
 
 ## Quickstart
 
@@ -202,7 +202,7 @@ servicelense scan examples/workspace --all --no-open --out reports/example
 npm run test:report
 ```
 
-The Python suite forbids socket connections and DNS. DOM tests exercise filtering, evidence selection, empty results and hostile text while trapping network APIs. Node is **not** required to install or use ServiceLense.
+The Python suite forbids socket connections and DNS. DOM tests exercise filtering, evidence selection, empty results and hostile text while trapping network APIs. Node is **not** required to install or use Service Lense.
 
 When changing Python dependencies, use `uv add` (or `uv add --dev` for test tools) and include the updated `pyproject.toml` and `uv.lock` together. CI uses `uv sync --locked` to reject stale lockfiles. Building distributions with `uv build` may fetch isolated build dependencies; the offline restriction applies to scans and reports.
 

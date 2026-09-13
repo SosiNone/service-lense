@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'">
-<title>ServiceLense · Dependency explorer</title>
+<title>Service Lense · Dependency explorer</title>
 <style>
 :root{color-scheme:dark;--ink:#e1ebef;--muted:#a0b3bd;--line:#33454f;--paper:#111b22;--surface:#1a2831;--control-line:#465c68;--teal:#6bd5c3;--amber:#f0be72;--red:#f39ba6;--node:#21343d;--node-line:#3e5b62;--edge:#78afa6;--edge-partial:#d7ac6d;--edge-unresolved:#d29197;--table-head:#20313b;--row-line:#2b3c46;--selected:#23463f;--badge-bg:#24483d;--badge-ink:#9ae5bf;--partial-bg:#493923;--partial-ink:#f0c783;--unresolved-bg:#492e38;--unresolved-ink:#ffb0bc;--url-bg:#22383b;--evidence-line:#3f635d;--reason-bg:#3d3324;--reason-ink:#ebc58a}
 :root[data-theme="light"]{color-scheme:light;--ink:#172b36;--muted:#61747b;--line:#dce5e6;--paper:#f5f8f8;--surface:#fff;--control-line:#cad8db;--teal:#087f79;--amber:#a56108;--red:#b9424c;--node:#f5f9f9;--node-line:#d6e4e3;--edge:#98bdb7;--edge-partial:#d7ac6d;--edge-unresolved:#d29197;--table-head:#f6f9f9;--row-line:#edf1f2;--selected:#eff9f5;--badge-bg:#e7f5ef;--badge-ink:#197254;--partial-bg:#fff3df;--partial-ink:#99610a;--unresolved-bg:#fbecef;--unresolved-ink:#ad3e49;--url-bg:#f2f7f6;--evidence-line:#d7e9e3;--reason-bg:#fff7e9;--reason-ink:#8c601e}
@@ -37,7 +37,7 @@ input,select,button{font:inherit}button{cursor:pointer}button:hover{color:var(--
 </style>
 </head>
 <body>
-<header><div class="header-title"><h1>ServiceLense</h1><span>HTTP dependency report</span></div><button type="button" id="theme-toggle" role="switch" aria-label="Dark mode" aria-checked="true" title="Switch to light mode"><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14Z"/></svg></button></header>
+<header><div class="header-title"><h1>Service Lense</h1><span>HTTP dependency report</span></div><button type="button" id="theme-toggle" role="switch" aria-label="Dark mode" aria-checked="true" title="Switch to light mode"><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14Z"/></svg></button></header>
 <main>
 <div class="stats" id="stats" aria-label="Scan summary"></div>
 <nav aria-label="Report sections"><button type="button" data-view="requests" aria-current="page">Dependencies</button><button type="button" data-view="projects">Projects</button><button type="button" data-view="destinations">Destinations</button><button type="button" data-view="coverage">Diagnostics</button><button type="button" data-view="metadata">Scan data</button></nav>

@@ -53,7 +53,7 @@ def save_profile(path: Path, projects: list[Project], overlays: dict[str, list[P
 
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(prog="servicelense", description="Map HTTP dependencies using local source and configuration. No runtime network access.")
-    result.add_argument("--version", action="version", version=f"ServiceLense {__version__}")
+    result.add_argument("--version", action="version", version=f"Service Lense {__version__}")
     subcommands = result.add_subparsers(dest="command", required=True)
     command = subcommands.add_parser("scan", help="Discover projects and produce an offline dependency report")
     command.add_argument("roots", nargs="*", type=Path, help="Local folders to discover projects under")

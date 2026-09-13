@@ -35,7 +35,7 @@ def origin(text: str) -> str | None:
 
 def scan(projects: list[Project], overlays: dict[str, list[Path]] | None = None) -> dict:
     parsers = adapters()
-    output: dict = {"schema_version": 1, "tool": "ServiceLense", "projects": [], "destinations": [],
+    output: dict = {"schema_version": 1, "tool": "Service Lense", "projects": [], "destinations": [],
                     "calls": [], "diagnostics": []}
     destinations: dict[str, dict] = {}
     calls: dict[str, dict] = {}

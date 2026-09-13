@@ -78,7 +78,7 @@ test("theme switch defaults to dark and preserves report navigation and selectio
 });
 
 test("empty scans provide explicit empty states in each inventory", () => {
-  const data = {tool: "ServiceLense", schema_version: 1, projects: [], destinations: [],
+  const data = {tool: "Service Lense", schema_version: 1, projects: [], destinations: [],
     calls: [], diagnostics: [], summary: {projects: 0, calls: 0, destinations: 0, resolved: 0, partial: 0, unresolved: 0}};
   const source = html.replace(/(<script id="report-data" type="application\/json">)[\s\S]*?(<\/script>)/,
     (_, a, b) => a + JSON.stringify(data) + b);

@@ -269,7 +269,7 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
 
     app = Application(
         layout=Layout(HSplit([
-            Window(FormattedTextControl(" ServiceLense  /  Select projects"), height=1, style="class:title"),
+            Window(FormattedTextControl(" Service Lense  /  Select projects"), height=1, style="class:title"),
             Window(FormattedTextControl(status), height=2, wrap_lines=True, style="class:status"),
             search,
             Window(control, wrap_lines=False, right_margins=[ScrollbarMargin(display_arrows=True)]),

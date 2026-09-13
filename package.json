@@ -1,7 +1,7 @@
 {
   "name": "servicelense-report-tests",
   "private": true,
-  "description": "Development-only DOM checks for the self-contained ServiceLense report",
+  "description": "Development-only DOM checks for the self-contained Service Lense report",
   "scripts": {"test:report": "node --test tests/report.test.cjs"},
   "devDependencies": {"jsdom": "^26.1.0"}
 }
