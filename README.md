@@ -26,29 +26,34 @@ On Linux or macOS:
 source .venv/bin/activate
 ```
 
-Then scan the included example:
+Start the interactive CLI:
 
 ```sh
-servicelense scan ./examples/workspace --all --out ./reports/quickstart
+servicelense
 ```
 
-The scan automatically opens `reports/quickstart/report.html` in your default browser to explore the three-project dependency map. Select a call or graph edge to see its source evidence. The same output directory also contains `dependencies.json` for programmatic use.
+Choose **New scan**, enter a folder (or accept the current directory), and select projects in the terminal tree. To try the included example, enter `./examples/workspace`. The CLI then offers configuration overlays, saving a profile, the report folder, and opening the report in your browser. No command arguments are required.
 
-To scan your own code, replace the example path with your backend directory:
+Profiles saved through the menu live in `.service-lense/profiles` under the directory where you launched the tool. Launch `servicelense` from that directory again to find them in the menu. Choose a profile to run it, edit its projects and overlays, rename it, or delete it. **Open a profile file** also lets you use profiles stored elsewhere. Deleting a profile asks for confirmation and keeps project files and reports.
+
+The menu returns after each scan so you can run another setup. Select **0** to go back or quit; Ctrl+C cancels the session. The generated `report.html` contains the interactive dependency map, and `dependencies.json` contains the complete scan data.
+
+For scripts and CI, the existing explicit scan command is also available:
 
 ```sh
 servicelense scan ./path/to/backend --all --out ./reports/backend
 ```
 
-The scan opens `reports/backend/report.html` automatically. `--all` scans every discovered project; omit it to choose projects interactively. Initial setup requires internet access, but scans run offline. No API keys or Node.js installation are needed.
+Initial setup requires internet access, but scans run offline. No API keys or Node.js installation are needed.
 
 ### Operations overview
 
-After setup, all scan, profile and report operations run locally without network access. `scan` is the CLI's only subcommand; the options below control project selection and output.
+After setup, all scan, profile and report operations run locally without network access. Run `servicelense` for the interactive workflow. The explicit `scan` options below are also available for automation.
 
 | Operation | Command or action |
 | --- | --- |
 | Install or refresh dependencies | `uv sync --locked` (may need internet access) |
+| Start the interactive scan and profile menu | `servicelense` |
 | Discover projects and choose which to scan | `servicelense scan ./backend` |
 | Scan every discovered project without prompting | `servicelense scan ./backend --all` |
 | Scan multiple folders | `servicelense scan ./backend ./other-repo --all` |
@@ -75,7 +80,7 @@ Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then inst
 uv sync --locked
 ```
 
-Activate the environment as shown in the quickstart, then run `servicelense --help` to see the available options.
+Activate the environment as shown in the quickstart, then run `servicelense` to start the interactive workflow.
 
 uv manages `.venv` and installs the exact dependencies in `uv.lock`, including development tools. It can download Python automatically if needed; `.python-version` selects Python 3.12 for local development, while the package supports Python 3.11 or newer. Windows is the primary development platform; Linux uses the same code and is included in CI.
 

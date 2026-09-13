@@ -51,10 +51,50 @@ def save_profile(path: Path, projects: list[Project], overlays: dict[str, list[P
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
+def load_profile(path: Path) -> tuple[list[Project], dict[str, list[Path]]]:
+    path = path.resolve()
+    roots, profile_overlays = read_profile(path)
+    projects = [p for p in discover(roots) if p.root in roots]
+    missing = set(roots) - {p.root for p in projects}
+    if missing:
+        raise ValueError("Saved project roots no longer contain discoverable projects: " + ", ".join(map(str, sorted(missing))))
+    data = json.loads(path.read_text(encoding="utf-8-sig"))
+    saved_keys = {(path.parent / e["root"]).resolve(): e.get("key") for e in data["projects"]}
+    overlays = {}
+    for project in projects:
+        if isinstance(saved_keys[project.root], str):
+            project.key = saved_keys[project.root]
+        overlays[project.key] = profile_overlays[str(project.root)]
+    if len({p.key for p in projects}) != len(projects):
+        raise ValueError("Profile project keys must be unique")
+    return projects, overlays
+
+
+def run_scan(projects: list[Project], overlays: dict[str, list[Path]], out: Path, no_open: bool = False) -> int:
+    print(f"Analyzing {len(projects)} project(s) locally...", file=sys.stderr)
+    data = scan(projects, overlays)
+    write_report(data, out)
+    summary = data["summary"]
+    print(f"{summary['calls']} HTTP calls | {summary['destinations']} destinations | "
+          f"{summary['partial'] + summary['unresolved']} partially resolved or unresolved")
+    print(f"Report: {(out / 'report.html').resolve()}")
+    print(f"JSON:   {(out / 'dependencies.json').resolve()}")
+    if data["diagnostics"]:
+        print(f"{len(data['diagnostics'])} diagnostic(s); see the report for coverage gaps.")
+    if not no_open:
+        try:
+            opened = webbrowser.open((out / "report.html").resolve().as_uri(), new=2)
+        except (OSError, webbrowser.Error):
+            opened = False
+        if not opened:
+            print("Could not open the browser; open the report path above manually.", file=sys.stderr)
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(prog="servicelense", description="Map HTTP dependencies using local source and configuration. No runtime network access.")
     result.add_argument("--version", action="version", version=f"Service Lense {__version__}")
-    subcommands = result.add_subparsers(dest="command", required=True)
+    subcommands = result.add_subparsers(dest="command")
     command = subcommands.add_parser("scan", help="Discover projects and produce an offline dependency report")
     command.add_argument("roots", nargs="*", type=Path, help="Local folders to discover projects under")
     command.add_argument("--out", type=Path, default=Path("reports"), help="Output directory (default: reports)")
@@ -69,23 +109,16 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
+        if args.command is None:
+            if not sys.stdin.isatty():
+                raise ValueError("Interactive mode needs a terminal. For scripts, use scan with --all or --profile")
+            from .interactive import interactive
+            return interactive()
         overlays: dict[str, list[Path]] = {}
         if args.profile:
             if args.roots:
                 raise ValueError("Use either roots or --profile, not both")
-            roots, profile_overlays = read_profile(args.profile.resolve())
-            projects = [p for p in discover(roots) if p.root in roots]
-            missing = set(roots) - {p.root for p in projects}
-            if missing:
-                raise ValueError("Saved project roots no longer contain discoverable projects: " + ", ".join(map(str, sorted(missing))))
-            data = json.loads(args.profile.read_text(encoding="utf-8-sig"))
-            saved_keys = {(args.profile.resolve().parent / e["root"]).resolve(): e.get("key") for e in data["projects"]}
-            for project in projects:
-                if isinstance(saved_keys[project.root], str):
-                    project.key = saved_keys[project.root]
-                overlays[project.key] = profile_overlays[str(project.root)]
-            if len({p.key for p in projects}) != len(projects):
-                raise ValueError("Profile project keys must be unique")
+            projects, overlays = load_profile(args.profile)
         else:
             if not args.roots:
                 raise ValueError("Supply at least one local root or --profile")
@@ -96,26 +129,10 @@ def main(argv: list[str] | None = None) -> int:
                 if not sys.stdin.isatty():
                     raise ValueError("Noninteractive scans require --all or --profile")
                 projects = select_projects(projects)
-        print(f"Analyzing {len(projects)} project(s) locally...", file=sys.stderr)
-        data = scan(projects, overlays)
-        write_report(data, args.out)
+        result = run_scan(projects, overlays, args.out, args.no_open)
         if args.save_profile:
             save_profile(args.save_profile, projects, overlays)
-        summary = data["summary"]
-        print(f"{summary['calls']} HTTP calls | {summary['destinations']} destinations | "
-              f"{summary['partial'] + summary['unresolved']} partially resolved or unresolved")
-        print(f"Report: {(args.out / 'report.html').resolve()}")
-        print(f"JSON:   {(args.out / 'dependencies.json').resolve()}")
-        if data["diagnostics"]:
-            print(f"{len(data['diagnostics'])} diagnostic(s); see the report for coverage gaps.")
-        if not args.no_open:
-            try:
-                opened = webbrowser.open((args.out / "report.html").resolve().as_uri(), new=2)
-            except (OSError, webbrowser.Error):
-                opened = False
-            if not opened:
-                print("Could not open the browser; open the report path above manually.", file=sys.stderr)
-        return 0
+        return result
     except (ValueError, OSError) as error:
         # Never echo JSONDecodeError text, which can contain configuration content.
         message = "Invalid JSON in the scan profile" if isinstance(error, json.JSONDecodeError) else str(error)
