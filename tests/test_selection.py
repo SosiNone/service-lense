@@ -83,8 +83,15 @@ def test_keyboard_cancel(projects, tui_loop):
     with create_pipe_input() as pipe:
         app = selection_app(projects, input=pipe, output=DummyOutput())
         pipe.send_text("q")
-        with pytest.raises(KeyboardInterrupt):
-            tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
+        async def expect_cancel():
+            # KeyboardInterrupt escapes an asyncio Task before its waiter can
+            # consume it. Catch it in the application coroutine so wait_for
+            # finishes normally and cannot interrupt the next TUI test.
+            with pytest.raises(KeyboardInterrupt):
+                await app.run_async()
+
+        tui_loop.run_until_complete(asyncio.wait_for(expect_cancel(), timeout=5))
+        assert not asyncio.all_tasks(tui_loop)
 
 
 @pytest.mark.parametrize("exit_key, remaining_query", [("\r", "child"), ("\t", "child"), ("\x1b", "")])
