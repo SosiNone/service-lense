@@ -160,3 +160,46 @@ test("hostile analyzed strings remain inert in graph, table and detail", () => {
     assert.deepEqual(errors, []);
   } finally { dom.window.close(); }
 });
+
+
+test("map navigation zooms, pans, suppresses drag selection, and resets after filtering", () => {
+  const {dom, document, errors} = openReport();
+  try {
+    const svg=document.querySelector("#graph svg");
+    const initial=svg.getAttribute("viewBox");
+    const box=()=>svg.getAttribute("viewBox").split(" ").map(Number);
+    svg.getBoundingClientRect=()=>({left:0,top:0,width:850,height:540});
+    let captured=false;
+    svg.setPointerCapture=()=>{captured=true;};
+    svg.hasPointerCapture=()=>captured;
+    svg.releasePointerCapture=()=>{captured=false;};
+    document.getElementById("map-zoom-in").click();
+    assert.ok(box()[2]<850);
+    document.getElementById("map-fit").click();
+    assert.equal(svg.getAttribute("viewBox"),initial);
+    svg.dispatchEvent(new dom.window.WheelEvent("wheel",{deltaY:-100,clientX:425,clientY:270,cancelable:true}));
+    assert.ok(box()[2]<850);
+    const before=box();
+    const pointer=(target,type,x,y)=>target.dispatchEvent(new dom.window.MouseEvent(type,{button:0,clientX:x,clientY:y,bubbles:true}));
+    const node=svg.querySelector(".node");
+    pointer(node,"pointerdown",100,100);
+    pointer(svg,"pointermove",160,130);
+    assert.ok(box()[0]<before[0]);
+    assert.ok(box()[1]<before[1]);
+    pointer(svg,"pointerup",160,130);
+    node.dispatchEvent(new dom.window.MouseEvent("click",{bubbles:true}));
+    assert.equal(document.getElementById("project").value,"");
+    assert.equal(captured,false);
+    svg.dispatchEvent(new dom.window.KeyboardEvent("keydown",{key:"Home"}));
+    assert.equal(svg.getAttribute("viewBox"),initial);
+    svg.dispatchEvent(new dom.window.KeyboardEvent("keydown",{key:"ArrowRight"}));
+    assert.ok(box()[0]>0);
+    change(dom,document.getElementById("status"),"resolved");
+    assert.equal(document.getElementById("map-zoom").textContent,"100%");
+    change(dom,document.getElementById("search"),"no-such-call","input");
+    assert.equal(document.getElementById("map-fit").disabled,true);
+    document.getElementById("reset").click();
+    assert.equal(document.getElementById("map-fit").disabled,false);
+    assert.deepEqual(errors,[]);
+  } finally {dom.window.close();}
+});
