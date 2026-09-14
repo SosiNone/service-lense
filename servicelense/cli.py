@@ -128,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
             if not args.all:
                 if not sys.stdin.isatty():
                     raise ValueError("Noninteractive scans require --all or --profile")
-                projects = select_projects(projects)
+                projects = select_projects(projects, overlays=overlays)
         result = run_scan(projects, overlays, args.out, args.no_open)
         if args.save_profile:
             save_profile(args.save_profile, projects, overlays)

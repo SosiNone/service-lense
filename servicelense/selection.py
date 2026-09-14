@@ -2,14 +2,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
 import os
 from pathlib import Path
+import re
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout import HSplit, Layout, Window
+from prompt_toolkit.layout import ConditionalContainer, HSplit, Layout, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.margins import ScrollbarMargin
 from prompt_toolkit.styles import Style
@@ -34,7 +36,7 @@ class Node:
 class ProjectTree:
     def __init__(self, projects: list[Project]):
         self.projects = projects
-        self.selected = set(range(len(projects)))
+        self.selected: set[int] = set()
         self.collapsed: set[Path] = set()
         self.query = ""
         self.cursor = 0
@@ -115,10 +117,85 @@ class ProjectTree:
                     break
 
 
-def selection_app(projects: list[Project], *, input=None, output=None) -> Application:
+def selection_app(projects: list[Project], *, directory: Path | None = None,
+                  overlays: dict[str, list[Path]] | None = None, input=None, output=None) -> Application:
+    from .cli import load_profile, save_profile
+
+    directory = directory if directory is not None else Path.cwd() / ".service-lense" / "profiles"
+    overlays = overlays if overlays is not None else {}
+    original_keys = [p.key for p in projects]
+    profiles: list[Path] = []
+    profile_mode = ""
+
+    def refresh_profiles():
+        profiles[:] = sorted(directory.glob("*.json"), key=lambda p: p.name.casefold())
+
+    refresh_profiles()
     tree = ProjectTree(projects)
     keys = KeyBindings()
-    searching = Condition(lambda: app.layout.has_focus(search))
+    # Text entry disables tree shortcuts in both the search and profile fields.
+    searching = Condition(lambda: app.layout.has_focus(search) or app.layout.has_focus(profile_input))
+    profile_input = TextArea(height=1, multiline=False)
+
+    def profile_list():
+        names = "   ".join(f"{i}. {display(p.stem)}" for i, p in enumerate(profiles, 1))
+        return " Profiles: " + (names or "No saved profiles yet")
+
+    @keys.add("s", filter=~searching)
+    @keys.add("S", filter=~searching)
+    @keys.add("L", filter=~searching)
+    def profile_action(event):
+        nonlocal profile_mode
+        profile_mode = "load" if event.key_sequence[0].key == "L" else "save"
+        if profile_mode == "save" and not tree.selected:
+            tree.message = "Select at least one project before saving a profile."
+            return
+        refresh_profiles()
+        profile_input.prompt = " Load profile (number or file path): " if profile_mode == "load" else " Save profile name: "
+        profile_input.text = ""
+        app.layout.focus(profile_input)
+
+    def apply_profile_action():
+        value = profile_input.text.strip()
+        if not value:
+            app.layout.focus(control)
+            return
+        try:
+            if profile_mode == "save":
+                if not re.fullmatch(r"[\w-][\w .-]*", value) or value.endswith((".", " ")):
+                    raise ValueError("Use a profile name without path separators or trailing dots/spaces.")
+                path = directory / (value if value.endswith(".json") else value + ".json")
+                if path.exists():
+                    raise ValueError("That profile already exists. Choose a new name.")
+                save_profile(path, [p for i, p in enumerate(projects) if i in tree.selected], overlays)
+                refresh_profiles()
+                tree.message = f"Saved profile: {display(path.stem)}"
+            else:
+                if value.isdecimal():
+                    number = int(value)
+                    if not 1 <= number <= len(profiles):
+                        raise ValueError("Choose an available profile number or enter a file path.")
+                    path = profiles[number - 1]
+                else:
+                    path = Path(value.strip('"')).expanduser().resolve()
+                loaded, saved_overlays = load_profile(path)
+                by_root = {p.root: p for p in loaded}
+                missing = set(by_root) - {p.root for p in projects}
+                if missing:
+                    raise ValueError("Profile projects outside this scan: " + ", ".join(map(str, sorted(missing))))
+                new_keys = [by_root[p.root].key if p.root in by_root else original_keys[i]
+                            for i, p in enumerate(projects)]
+                if len(set(new_keys)) != len(new_keys):
+                    raise ValueError("Profile project keys conflict with discovered projects.")
+                for project, key in zip(projects, new_keys):
+                    project.key = key
+                tree.selected = {i for i, p in enumerate(projects) if p.root in by_root}
+                overlays.clear()
+                overlays.update(saved_overlays)
+                tree.message = f"Loaded profile: {display(path.stem)}"
+            app.layout.focus(control)
+        except (ValueError, OSError) as error:
+            tree.message = "Invalid JSON in the profile" if isinstance(error, json.JSONDecodeError) else display(str(error))
 
     def render():
         rows = tree.rows()
@@ -156,7 +233,8 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
     search.buffer.on_text_changed += changed
 
     def status():
-        mode = "Editing search" if searching() else "Filtered results" if tree.query else "Project tree"
+        mode = (f"{profile_mode.capitalize()} profile" if app.layout.has_focus(profile_input) else
+                "Editing search" if searching() else "Filtered results" if tree.query else "Project tree")
         message = f"  |  {tree.message}" if tree.message else ""
         return f" {len(tree.selected)} of {len(projects)} projects selected  |  {mode}{message}"
 
@@ -223,12 +301,15 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
 
     @keys.add("escape", eager=True)
     def clear_search(event):
-        search.text = ""
+        if not app.layout.has_focus(profile_input):
+            search.text = ""
         app.layout.focus(control)
 
     @keys.add("enter")
     def submit(event):
-        if searching():
+        if app.layout.has_focus(profile_input):
+            apply_profile_action()
+        elif searching():
             app.layout.focus(control)
         elif tree.selected:
             app.exit(result=[p for i, p in enumerate(projects) if i in tree.selected])
@@ -250,6 +331,8 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
                 parts.extend([("class:key", f" {key} "), ("", f" {description}")])
             return parts + [("", "\n")]
 
+        if app.layout.has_focus(profile_input):
+            return line("Profiles", [("Enter", profile_mode), ("Esc", "cancel"), ("Ctrl+C", "quit")])
         if searching():
             parts = line("Search", [("Type", "filter by path or language")])
             parts += line("Results", [("Enter / Tab", "leave search, keep filter")])
@@ -258,6 +341,7 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
         parts = line("Navigate", [("Arrows/hjkl", "move/fold"), ("gg/G", "first/last")])
         parts += line("Select", [("Space/x", "toggle"), ("B", "branch"), ("A/N", "all/none")])
         parts += line("Actions", [("/", "search"), ("Enter", "scan"), ("Q", "cancel")])
+        parts += line("Profiles", [("S", "save selection"), ("L", "load number or path")])
         if tree.query:
             hint = " Esc clears the filter. Branch selection includes hidden projects."
         else:
@@ -274,7 +358,9 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
             search,
             Window(control, wrap_lines=False, right_margins=[ScrollbarMargin(display_arrows=True)]),
             Window(FormattedTextControl(detail), height=2, wrap_lines=True, style="class:muted"),
-            Window(FormattedTextControl(help_text), height=4, wrap_lines=True),
+            Window(FormattedTextControl(profile_list), wrap_lines=True, dont_extend_height=True),
+            ConditionalContainer(profile_input, filter=Condition(lambda: app.layout.has_focus(profile_input))),
+            Window(FormattedTextControl(help_text), height=5, wrap_lines=True),
         ]), focused_element=control),
         key_bindings=keys, full_screen=True, input=input, output=output,
         style=Style.from_dict({"title": "bg:#142c35 #ffffff bold", "status": "#60c8b7 bold",
@@ -284,5 +370,6 @@ def selection_app(projects: list[Project], *, input=None, output=None) -> Applic
     return app
 
 
-def select_projects(projects: list[Project]) -> list[Project]:
-    return selection_app(projects).run()
+def select_projects(projects: list[Project], *, directory: Path | None = None,
+                    overlays: dict[str, list[Path]] | None = None) -> list[Project]:
+    return selection_app(projects, directory=directory, overlays=overlays).run()

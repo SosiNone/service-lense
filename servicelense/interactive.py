@@ -99,14 +99,9 @@ def new_scan(directory: Path) -> None:
     projects = discover(roots_to_scan())
     if not projects:
         raise ValueError("No supported projects or source files found in these folders")
-    projects = select_projects(projects)
     overlays: dict[str, list[Path]] = {}
+    projects = select_projects(projects, directory=directory, overlays=overlays)
     configure_overlays(projects, overlays)
-    if confirm("Save this selection as a profile?"):
-        path = profile_destination(directory)
-        if path:
-            save_profile(path, projects, overlays)
-            print(f"Saved profile: {path}")
     scan_options(projects, overlays)
 
 
@@ -150,19 +145,10 @@ def interactive() -> int:
     print("Use Ctrl+C to cancel. Project selection uses arrow keys and Space.")
     while True:
         try:
-            profiles = sorted(directory.glob("*.json"), key=lambda p: p.name.casefold())
-            action = choose("What would you like to do?", ["New scan", "Open a profile file", *[f"Profile: {p.stem}" for p in profiles]])
-            if action is None:
-                return 0
-            if action == 0:
-                new_scan(directory)
-            elif action == 1:
-                value = ask("Profile file (Enter to go back)")
-                if value:
-                    manage_profile(local_path(value))
-            else:
-                manage_profile(profiles[action - 2])
+            new_scan(directory)
         except (ValueError, OSError) as error:
             message = "Invalid JSON in the profile" if isinstance(error, json.JSONDecodeError) else str(error)
             print(f"Could not complete this action: {message}")
-            print("Choose another action or fix the path and try again.")
+            print("Fix the path and start a new scan to try again.")
+        if not confirm("Start another scan?"):
+            return 0

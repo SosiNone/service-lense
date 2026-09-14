@@ -32,11 +32,11 @@ Start the interactive CLI:
 servicelense
 ```
 
-Choose **New scan**, enter a folder (or accept the current directory), and select projects in the terminal tree. To try the included example, enter `./examples/workspace`. The CLI then offers configuration overlays, saving a profile, the report folder, and opening the report in your browser. No command arguments are required.
+The CLI starts a new scan: enter a folder (or accept the current directory), then select projects in the terminal tree. All projects start deselected. To try the included example, enter `./examples/workspace`. The selection view lists available profiles and offers **S** to save the current selection and **L** to load a profile by its listed number or file path. The CLI then offers configuration overlays, the report folder, and opening the report in your browser. No command arguments are required.
 
-Profiles saved through the menu live in `.service-lense/profiles` under the directory where you launched the tool. Launch `servicelense` from that directory again to find them in the menu. Choose a profile to run it, edit its projects and overlays, rename it, or delete it. **Open a profile file** also lets you use profiles stored elsewhere. Deleting a profile asks for confirmation and keeps project files and reports.
+Profiles saved through the selection view live in `.service-lense/profiles` under the directory where you launched the tool. Launch `servicelense` from that directory again to find them listed after discovery. Loading a profile replaces the selection and restores its configuration overlays; all saved projects must be present in the freshly scanned folders. You can adjust the selection and save it under a new name. Saving preserves loaded overlays; overlays configured after leaving the selection view apply to the current report.
 
-The menu returns after each scan so you can run another setup. Select **0** to go back or quit; Ctrl+C cancels the session. The generated `report.html` contains the interactive dependency map, and `dependencies.json` contains the complete scan data.
+After each scan, the CLI asks whether to start another scan. Use **Q** in the tree or Ctrl+C to cancel. The generated `report.html` contains the interactive dependency map, and `dependencies.json` contains the complete scan data.
 
 For scripts and CI, the existing explicit scan command is also available:
 
@@ -92,7 +92,7 @@ Initial setup downloads Python dependencies and prebuilt parsers. After installa
 servicelense scan ./backend ./other-repo --out ./reports --save-profile ./scan-profile.json
 ```
 
-The CLI opens a terminal project tree with nested folders, project languages, branch selection counts and the focused item's full path. All projects are initially selected. The tree updates in place as you change the selection.
+The CLI opens a terminal project tree with nested folders, project languages, branch selection counts and the focused item's full path. All projects are initially deselected. The tree updates in place as you change the selection, with available profiles listed below it.
 
 | Key | Action |
 | --- | --- |
@@ -108,6 +108,8 @@ The CLI opens a terminal project tree with nested folders, project languages, br
 | Tab or Enter while searching | Leave search and return to results, keeping the filter; this does not start a scan |
 | Esc | Clear the filter and return to the tree, from either search or results |
 | Enter in the tree | Scan the selected projects |
+| S | Save the current selection as a named profile |
+| L | Load a profile by listed number or file path |
 | Q or Ctrl+C | Cancel |
 
 The keyboard help changes while editing search. Vim navigation keys are treated as ordinary text in the search field. Press `/` or Tab from the tree to edit the filter again.
