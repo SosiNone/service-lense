@@ -18,6 +18,7 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.widgets import TextArea
 
 from .model import Project
+from .terminal_keys import KeyboardMode, register_keys
 
 
 def display(value: str) -> str:
@@ -122,6 +123,8 @@ def selection_app(projects: list[Project], *, directory: Path | None = None,
                   overlays: dict[str, list[Path]] | None = None, input=None, output=None) -> Application:
     from .cli import load_profile, save_profile
 
+    register_keys()
+    keyboard_mode = KeyboardMode()
     directory = directory if directory is not None else Path.cwd() / ".service-lense" / "profiles"
     overlays = overlays if overlays is not None else {}
     original_keys = [p.key for p in projects]
@@ -312,10 +315,15 @@ def selection_app(projects: list[Project], *, directory: Path | None = None,
             apply_profile_action()
         elif searching():
             app.layout.focus(control)
-        elif tree.selected:
+        else:
+            tree.toggle()
+
+    @keys.add("c-j", filter=~searching)
+    def start_scan(event):
+        if tree.selected:
             app.exit(result=[p for i, p in enumerate(projects) if i in tree.selected])
         else:
-            tree.message = "Select at least one project with Space, x or A."
+            tree.message = "Select at least one project with Enter, Space, x or A."
 
     @keys.add("Q", filter=~searching)
     @keys.add("q", filter=~searching)
@@ -340,16 +348,16 @@ def selection_app(projects: list[Project], *, directory: Path | None = None,
             parts += line("Reset", [("Esc", "clear filter and leave search"), ("Ctrl+C", "cancel")])
             return parts + [("class:muted", " Selected projects stay selected, even when hidden by the filter.")]
         parts = line("Navigate", [("Arrows/hjkl", "move/fold"), ("gg/G", "first/last")])
-        parts += line("Select", [("Space/x", "toggle"), ("B", "branch"), ("A/N", "all/none")])
-        parts += line("Actions", [("/", "search"), ("Enter", "scan"), ("Q", "cancel")])
+        parts += line("Select", [("Enter/Space/x", "toggle"), ("B", "branch"), ("A/N", "all/none")])
+        parts += line("Actions", [("/", "search"), ("Ctrl+Enter/Ctrl+J", "scan"), ("Q", "cancel")])
         parts += line("Profiles", [("S", "save selection"), ("L", "load number or path")])
         if tree.query:
             hint = " Esc clears the filter. Branch selection includes hidden projects."
         else:
             node = tree.current()
-            hint = (" Space or x toggles this folder's entire branch, including nested projects."
+            hint = (" Enter, Space or x toggles this folder's entire branch, including nested projects."
                     if node and node.children else
-                    " Space or x toggles this project only.")
+                    " Enter, Space or x toggles this project only.")
         return parts + [("class:muted", hint)]
 
     app = Application(
@@ -364,6 +372,7 @@ def selection_app(projects: list[Project], *, directory: Path | None = None,
             Window(FormattedTextControl(help_text), height=5, wrap_lines=True),
         ]), focused_element=control),
         key_bindings=keys, full_screen=True, input=input, output=output,
+        before_render=keyboard_mode.before_render, after_render=keyboard_mode.after_render,
         style=Style.from_dict({"title": "bg:#142c35 #ffffff bold", "status": "#60c8b7 bold",
                                "current": "bg:#087f79 #ffffff bold", "muted": "#888888",
                                "key": "bg:#263e47 #ffffff bold", "help-label": "#60c8b7 bold"}),

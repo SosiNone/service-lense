@@ -27,13 +27,13 @@ def test_interactive_new_scan_save_and_rerun(make_project, tmp_path, monkeypatch
         return projects
     monkeypatch.setattr("servicelense.interactive.select_projects", select)
     out = tmp_path / "report"
-    answers(monkeypatch, ["", "", "n", str(out), "n", "n"])
+    answers(monkeypatch, ["", "", "n", str(out), "n"])
     assert main([]) == 0
     profile = root / ".service-lense/profiles/backend.json"
     assert profile.is_file()
     first = json.loads((out / "dependencies.json").read_text())
     make_project({"child/package.json": "{}", "child/main.ts": ""})
-    answers(monkeypatch, ["", "", "n", str(out), "y", "n", "n"])
+    answers(monkeypatch, ["", "", "n", str(out), "y", "n"])
     assert main([]) == 0
     assert json.loads((out / "dependencies.json").read_text()) == first
     browser_open.assert_not_called()
@@ -70,10 +70,10 @@ def test_interactive_rename_and_confirmed_delete(make_project, monkeypatch):
     assert (root / "main.py").is_file()
 
 
-def test_interactive_invalid_root_can_retry(tmp_path, monkeypatch, capsys):
+def test_interactive_invalid_root_exits_without_retry_prompt(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
-    answers(monkeypatch, [str(tmp_path / "missing"), "", "y", str(tmp_path), "", "n"])
-    assert main([]) == 0
+    answers(monkeypatch, [str(tmp_path / "missing"), ""])
+    assert main([]) == 2
     assert "Could not complete this action" in capsys.readouterr().out
 
 

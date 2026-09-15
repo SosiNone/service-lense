@@ -142,13 +142,12 @@ def interactive() -> int:
     directory = Path.cwd() / ".service-lense" / "profiles"
     print("\nService Lense — HTTP dependency explorer")
     print(f"Profiles for this workspace: {directory}")
-    print("Use Ctrl+C to cancel. Project selection uses arrow keys and Space.")
-    while True:
-        try:
-            new_scan(directory)
-        except (ValueError, OSError) as error:
-            message = "Invalid JSON in the profile" if isinstance(error, json.JSONDecodeError) else str(error)
-            print(f"Could not complete this action: {message}")
-            print("Fix the path and start a new scan to try again.")
-        if not confirm("Start another scan?"):
-            return 0
+    print("Use arrows to move, Enter to select, Ctrl+Enter to scan, and Ctrl+C to cancel.")
+    try:
+        new_scan(directory)
+    except (ValueError, OSError) as error:
+        message = "Invalid JSON in the profile" if isinstance(error, json.JSONDecodeError) else str(error)
+        print(f"Could not complete this action: {message}")
+        print("Fix the path and run servicelense again to try again.")
+        return 2
+    return 0

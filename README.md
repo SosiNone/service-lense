@@ -36,7 +36,7 @@ The CLI starts a new scan: enter a folder (or accept the parent of the current d
 
 Profiles saved through the selection view live in `.service-lense/profiles` under the directory where you launched the tool. Launch `servicelense` from that directory again to find them listed after discovery. Loading a profile replaces the selection and restores its configuration overlays; all saved projects must be present in the freshly scanned folders. You can adjust the selection and save it under a new name. Saving preserves loaded overlays; overlays configured after leaving the selection view apply to the current report.
 
-After each scan, the CLI asks whether to start another scan. Use **Q** in the tree or Ctrl+C to cancel. The generated `report.html` contains the interactive dependency map, and `dependencies.json` contains the complete scan data.
+The CLI exits after each scan. Use **Q** in the tree or Ctrl+C to cancel. The generated `report.html` contains the interactive dependency map, and `dependencies.json` contains the complete scan data.
 
 For scripts and CI, the existing explicit scan command is also available:
 
@@ -70,7 +70,7 @@ After setup, all scan, profile and report operations run locally without network
 | Show general or scan-specific help | `servicelense --help` or `servicelense scan --help` |
 | Show the installed version | `servicelense --version` |
 
-The default output directory is `./reports`. Folders in the interactive tree start collapsed. The tree supports arrow-key or Vim navigation (`hjkl`), Space or `x` to toggle a project or an entire folder subtree, `B` to toggle a whole branch, `A` to select all, `N` to clear selection, `/` to search, Enter to scan, and `Q` to cancel. For unattended runs, use `--all` or `--profile` and add `--no-open` to skip launching a browser. A profile supplies the project roots and cannot be combined with root arguments or `--all`.
+The default output directory is `./reports`. Folders in the interactive tree start collapsed. The tree supports arrow-key or Vim navigation (`hjkl`), Enter, Space or `x` to toggle a project or an entire folder subtree, `B` to toggle a whole branch, `A` to select all, `N` to clear selection, `/` to search, Ctrl+Enter to scan, and `Q` to cancel. For unattended runs, use `--all` or `--profile` and add `--no-open` to skip launching a browser. A profile supplies the project roots and cannot be combined with root arguments or `--all`.
 
 ## Install from a Git checkout
 
@@ -101,16 +101,18 @@ The CLI opens a terminal project tree with nested folders, project languages, br
 | Ctrl+U / Ctrl+D | Move half a terminal screen up / down |
 | gg / G, Home / End | Jump to the first / last visible row |
 | Left / Right or h / l | Collapse / expand a branch; Left or `h` on a collapsed item moves to its parent |
-| Space / x | Toggle only the focused leaf project; on a folder, toggle its whole branch |
+| Enter / Space / x | Toggle only the focused leaf project; on a folder, toggle its whole branch |
 | B | Toggle the focused branch, including its parent project and all nested projects |
 | A / N | Select all projects / clear all selections |
 | / | Search project paths and languages; matching ancestors remain visible |
 | Tab or Enter while searching | Leave search and return to results, keeping the filter; this does not start a scan |
 | Esc | Clear the filter and return to the tree, from either search or results |
-| Enter in the tree | Scan the selected projects |
+| Ctrl+Enter / Ctrl+J in the tree | Scan the selected projects |
 | S | Save the current selection as a named profile |
 | L | Load a profile by listed number or file path |
 | Q or Ctrl+C | Cancel |
+
+The selector enables the [enhanced keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) in compatible terminals to distinguish Ctrl+Enter from Enter. If your terminal sends both as Enter, use Ctrl+J to scan.
 
 The keyboard help changes while editing search. Vim navigation keys are treated as ordinary text in the search field. Press `/` or Tab from the tree to edit the filter again.
 

@@ -7,6 +7,8 @@ from servicelense.discovery import discover
 from servicelense.cli import load_profile, save_profile
 from servicelense.selection import ProjectTree, selection_app
 
+CTRL_ENTER = "\x1b[13;5u"
+
 
 @pytest.fixture(scope="session")
 def tui_loop():
@@ -77,33 +79,67 @@ def test_filter_and_collapse_preserve_hidden_selection(projects):
 
 
 @pytest.mark.parametrize("keys, expected", [
-    ("a\r", [0, 1, 2]),
-    ("n\r \r", [0, 1, 2]),  # Empty submission stays in the selector.
-    ("n\x1b[C\x1b[B \r", [1]),  # Space on grouping folder selects its subtree.
-    ("n/child\r\x1b[B\x1b[B \r", [1]),
-    ("\x1b[D\x1b[Cb a\r", [0, 1, 2]),
-    ("nlG \r", [2]),
-    ("nx\r", [0, 1, 2]),
-    ("nljx\r", [1]),
-    ("nx x lG \r", [2]),
-    ("nlGgg \r", [0, 1, 2]),
-    ("nljjk \r", [1]),
-    ("nhjljlj \r", [1]),
-    ("nl\x04 \r", [2]),
-    ("nl\x04\x15 \r", [0, 1, 2]),
+    ("a", [0, 1, 2]),
+    ("n" + CTRL_ENTER + " ", [0, 1, 2]),  # Empty submission stays in the selector.
+    ("n\x1b[C\x1b[B ", [1]),  # Space on grouping folder selects its subtree.
+    ("n/child\r\x1b[B\x1b[B ", [1]),
+    ("\x1b[D\x1b[Cb a", [0, 1, 2]),
+    ("nlG ", [2]),
+    ("nx", [0, 1, 2]),
+    ("nljx", [1]),
+    ("nx x lG ", [2]),
+    ("nlGgg ", [0, 1, 2]),
+    ("nljjk ", [1]),
+    ("nhjljlj ", [1]),
+    ("nl\x04 ", [2]),
+    ("nl\x04\x15 ", [0, 1, 2]),
+    ("\r", [0, 1, 2]),  # Enter selects the collapsed root branch.
+    ("\r\rlG\r", [2]),  # Enter deselects too, without submitting.
+    ("nlj\r", [1]),
 ])
 def test_keyboard_selection(projects, keys, expected, tui_loop):
     with create_pipe_input() as pipe:
         app = selection_app(projects, input=pipe, output=DummyOutput())
-        pipe.send_text(keys)
+        pipe.send_text(keys + CTRL_ENTER)
         result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
     assert result == [projects[i] for i in expected]
 
 
-def test_keyboard_cancel(projects, tui_loop):
+@pytest.mark.parametrize("start_key", [CTRL_ENTER, "\x1b[27;5;13~", "\n", "\x1b[106;5u",
+                                      "\x1b[57414;5u"])
+def test_scan_shortcuts_and_keyboard_mode_cleanup(projects, tui_loop, start_key):
+    class RecordingOutput(DummyOutput):
+        def __init__(self):
+            self.raw = []
+
+        def write_raw(self, data):
+            self.raw.append(data)
+
+    output = RecordingOutput()
+    with create_pipe_input() as pipe:
+        app = selection_app(projects, input=pipe, output=output)
+        # Toggle twice: ordinary Enter must not submit an existing selection.
+        pipe.send_text("\r\rlG\r" + start_key)
+        result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
+    assert result == [projects[2]]
+    assert output.raw == ["\x1b[>1u", "\x1b[<u"]
+
+
+def test_enhanced_control_keys_preserve_search_editing(projects, tui_loop):
     with create_pipe_input() as pipe:
         app = selection_app(projects, input=pipe, output=DummyOutput())
-        pipe.send_text("q")
+        # Ctrl+U clears text; Escape leaves search. Both are encoded differently
+        # once enhanced keyboard reporting is enabled.
+        pipe.send_text("/wrong\x1b[117;5uchild\rG\r\x1b[27u" + CTRL_ENTER)
+        result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
+    assert result == [projects[1]]
+
+
+@pytest.mark.parametrize("cancel_key", ["q", "\x1b[99;5u"])
+def test_keyboard_cancel(projects, tui_loop, cancel_key):
+    with create_pipe_input() as pipe:
+        app = selection_app(projects, input=pipe, output=DummyOutput())
+        pipe.send_text(cancel_key)
         async def expect_cancel():
             # KeyboardInterrupt escapes an asyncio Task before its waiter can
             # consume it. Catch it in the application coroutine so wait_for
@@ -127,7 +163,7 @@ def test_save_and_load_profiles_in_tree(projects, tmp_path, tui_loop):
         app = selection_app(projects, directory=directory, overlays=overlays,
                             input=pipe, output=DummyOutput())
         # Load from the visible list, save a copy, clear and reload the copy.
-        pipe.send_text("L1\rScopy\rnL2\r\r")
+        pipe.send_text("L1\rScopy\rnL2\r" + CTRL_ENTER)
         result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
     assert result == [projects[1]]
     assert result[0].key == "saved-child"
@@ -146,7 +182,7 @@ def test_invalid_profile_preserves_selection(projects, tmp_path, tui_loop, conte
     with create_pipe_input() as pipe:
         app = selection_app(projects, directory=directory, overlays=overlays,
                             input=pipe, output=DummyOutput())
-        pipe.send_text("lGxL1\r\t\r")
+        pipe.send_text("lGxL1\r\t" + CTRL_ENTER)
         result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
     assert result == [projects[2]]
     assert overlays == {projects[0].key: []}
@@ -157,7 +193,7 @@ def test_save_refuses_overwrite_and_empty_selection(projects, tmp_path, tui_loop
     path.write_text("original")
     with create_pipe_input() as pipe:
         app = selection_app(projects, directory=tmp_path, input=pipe, output=DummyOutput())
-        pipe.send_text("SlGxSexisting\r\x15new\r\r")
+        pipe.send_text("SlGxSexisting\r\x15new\r" + CTRL_ENTER)
         result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
     assert result == [projects[2]]
     assert path.read_text() == "original"
@@ -170,7 +206,7 @@ def test_profile_outside_scan_is_rejected(projects, make_project, tmp_path, tui_
     save_profile(path, discover([other]), {})
     with create_pipe_input() as pipe:
         app = selection_app(projects, directory=tmp_path, input=pipe, output=DummyOutput())
-        pipe.send_text(f"lGxL{path}\r\t\r")
+        pipe.send_text(f"lGxL{path}\r\t" + CTRL_ENTER)
         result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
     assert result == [projects[2]]
 
@@ -195,7 +231,7 @@ def test_search_exit_returns_focus_without_scanning(projects, tui_loop, exit_key
             assert search_control.buffer.text == remaining_query
             # Navigation now targets the tree. Enter/Tab retain the filter;
             # Escape clears it, so G reaches a different project.
-            pipe.send_text("n" + ("" if remaining_query else "l") + "G \r")
+            pipe.send_text("n" + ("" if remaining_query else "l") + "G " + CTRL_ENTER)
             result = await asyncio.wait_for(running, timeout=2)
             assert result == [projects[1 if remaining_query else 2]]
         finally:
@@ -222,7 +258,7 @@ def test_vim_letters_are_text_in_search(projects, tui_loop):
             # Esc from the results also clears a filter with no matches.
             pipe.send_text("\x1b")
             await asyncio.sleep(0.7)
-            pipe.send_text("a\r")
+            pipe.send_text("a" + CTRL_ENTER)
             assert await asyncio.wait_for(running, timeout=2) == projects
         finally:
             if not running.done():
