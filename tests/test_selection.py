@@ -25,19 +25,22 @@ def projects(make_project):
     return discover([root])
 
 
-def test_parent_and_nested_selections_are_independent(projects):
+def test_parent_folders_toggle_all_descendants(projects):
     tree = ProjectTree(projects)
     assert tree.selected == set()
     tree.toggle()
-    assert tree.selected == {0}
-    tree.toggle(branch=True)
     assert tree.selected == {0, 1, 2}
-    tree.toggle(branch=True)
+    tree.toggle()
     assert tree.selected == set()
     tree.fold(expand=True)
     tree.cursor = 1  # examples is a grouping folder, not a project.
     tree.toggle()
     assert tree.selected == {1}
+    tree.toggle()
+    assert tree.selected == set()
+    tree.cursor = 2  # other is a leaf project.
+    tree.toggle()
+    assert tree.selected == {2}
 
 
 def test_folders_are_collapsed_by_default(projects):
@@ -75,19 +78,19 @@ def test_filter_and_collapse_preserve_hidden_selection(projects):
 
 @pytest.mark.parametrize("keys, expected", [
     ("a\r", [0, 1, 2]),
-    ("n\r \r", [0]),  # Empty submission stays in the selector.
+    ("n\r \r", [0, 1, 2]),  # Empty submission stays in the selector.
     ("n\x1b[C\x1b[B \r", [1]),  # Space on grouping folder selects its subtree.
     ("n/child\r\x1b[B\x1b[B \r", [1]),
     ("\x1b[D\x1b[Cb a\r", [0, 1, 2]),
     ("nlG \r", [2]),
-    ("nx\r", [0]),
+    ("nx\r", [0, 1, 2]),
     ("nljx\r", [1]),
-    ("nx x\r", [0]),
-    ("nlGgg \r", [0]),
+    ("nx x lG \r", [2]),
+    ("nlGgg \r", [0, 1, 2]),
     ("nljjk \r", [1]),
     ("nhjljlj \r", [1]),
     ("nl\x04 \r", [2]),
-    ("nl\x04\x15 \r", [0]),
+    ("nl\x04\x15 \r", [0, 1, 2]),
 ])
 def test_keyboard_selection(projects, keys, expected, tui_loop):
     with create_pipe_input() as pipe:
@@ -143,9 +146,9 @@ def test_invalid_profile_preserves_selection(projects, tmp_path, tui_loop, conte
     with create_pipe_input() as pipe:
         app = selection_app(projects, directory=directory, overlays=overlays,
                             input=pipe, output=DummyOutput())
-        pipe.send_text("xL1\r\t\r")
+        pipe.send_text("lGxL1\r\t\r")
         result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
-    assert result == [projects[0]]
+    assert result == [projects[2]]
     assert overlays == {projects[0].key: []}
 
 
@@ -154,9 +157,9 @@ def test_save_refuses_overwrite_and_empty_selection(projects, tmp_path, tui_loop
     path.write_text("original")
     with create_pipe_input() as pipe:
         app = selection_app(projects, directory=tmp_path, input=pipe, output=DummyOutput())
-        pipe.send_text("SxSexisting\r\x15new\r\r")
+        pipe.send_text("SlGxSexisting\r\x15new\r\r")
         result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
-    assert result == [projects[0]]
+    assert result == [projects[2]]
     assert path.read_text() == "original"
     assert (tmp_path / "new.json").is_file()
 
@@ -167,9 +170,9 @@ def test_profile_outside_scan_is_rejected(projects, make_project, tmp_path, tui_
     save_profile(path, discover([other]), {})
     with create_pipe_input() as pipe:
         app = selection_app(projects, directory=tmp_path, input=pipe, output=DummyOutput())
-        pipe.send_text(f"xL{path}\r\t\r")
+        pipe.send_text(f"lGxL{path}\r\t\r")
         result = tui_loop.run_until_complete(asyncio.wait_for(app.run_async(), timeout=5))
-    assert result == [projects[0]]
+    assert result == [projects[2]]
 
 
 @pytest.mark.parametrize("exit_key, remaining_query", [("\r", "child"), ("\t", "child"), ("\x1b", "")])

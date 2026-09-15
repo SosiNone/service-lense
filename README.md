@@ -70,7 +70,7 @@ After setup, all scan, profile and report operations run locally without network
 | Show general or scan-specific help | `servicelense --help` or `servicelense scan --help` |
 | Show the installed version | `servicelense --version` |
 
-The default output directory is `./reports`. Folders in the interactive tree start collapsed. The tree supports arrow-key or Vim navigation (`hjkl`), Space or `x` to toggle a project, `B` to toggle a whole branch, `A` to select all, `N` to clear selection, `/` to search, Enter to scan, and `Q` to cancel. For unattended runs, use `--all` or `--profile` and add `--no-open` to skip launching a browser. A profile supplies the project roots and cannot be combined with root arguments or `--all`.
+The default output directory is `./reports`. Folders in the interactive tree start collapsed. The tree supports arrow-key or Vim navigation (`hjkl`), Space or `x` to toggle a project or an entire folder subtree, `B` to toggle a whole branch, `A` to select all, `N` to clear selection, `/` to search, Enter to scan, and `Q` to cancel. For unattended runs, use `--all` or `--profile` and add `--no-open` to skip launching a browser. A profile supplies the project roots and cannot be combined with root arguments or `--all`.
 
 ## Install from a Git checkout
 
@@ -101,7 +101,7 @@ The CLI opens a terminal project tree with nested folders, project languages, br
 | Ctrl+U / Ctrl+D | Move half a terminal screen up / down |
 | gg / G, Home / End | Jump to the first / last visible row |
 | Left / Right or h / l | Collapse / expand a branch; Left or `h` on a collapsed item moves to its parent |
-| Space / x | Toggle only the focused project; on a grouping folder, toggle its whole branch |
+| Space / x | Toggle only the focused leaf project; on a folder, toggle its whole branch |
 | B | Toggle the focused branch, including its parent project and all nested projects |
 | A / N | Select all projects / clear all selections |
 | / | Search project paths and languages; matching ancestors remain visible |

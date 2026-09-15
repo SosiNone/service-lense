@@ -91,7 +91,7 @@ class ProjectTree:
         node = self.current()
         if node is None:
             return
-        targets = node.members if branch or node.project is None else {node.project}
+        targets = node.members if branch or node.children or node.project is None else {node.project}
         if targets <= self.selected:
             self.selected -= targets
         else:
@@ -205,8 +205,8 @@ def selection_app(projects: list[Project], *, directory: Path | None = None,
         fragments = []
         for row, (node, depth) in enumerate(rows):
             selected = len(node.members & tree.selected)
-            mark = ("x" if node.project in tree.selected else " ") if node.project is not None else (
-                "x" if selected == len(node.members) else "-" if selected else " ")
+            mark = ("x" if selected == len(node.members) else "-" if selected else " ") if (
+                node.children or node.project is None) else ("x" if node.project in tree.selected else " ")
             arrow = (">" if node.path in tree.collapsed and not tree.query else "v") if node.children else " "
             label = display(node.path.name or str(node.path))
             if node.project is not None:
@@ -348,8 +348,8 @@ def selection_app(projects: list[Project], *, directory: Path | None = None,
         else:
             node = tree.current()
             hint = (" Space or x toggles this folder's entire branch, including nested projects."
-                    if node and node.project is None else
-                    " Space or x toggles this project only. B includes its nested projects.")
+                    if node and node.children else
+                    " Space or x toggles this project only.")
         return parts + [("class:muted", hint)]
 
     app = Application(
