@@ -28,6 +28,7 @@ class Project:
     key: str
     languages: list[str] = field(default_factory=list)
     files: list[Path] = field(default_factory=list)
+    files_pending: bool = False
 
     @property
     def id(self) -> str:

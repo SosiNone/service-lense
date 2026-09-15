@@ -96,7 +96,7 @@ def scan_options(projects: list[Project], overlays: dict[str, list[Path]]) -> No
 
 
 def new_scan(directory: Path) -> None:
-    projects = discover(roots_to_scan())
+    projects = discover(roots_to_scan(), inventory=False)
     if not projects:
         raise ValueError("No supported projects or source files found in these folders")
     overlays: dict[str, list[Path]] = {}
@@ -118,7 +118,7 @@ def manage_profile(path: Path) -> None:
             print("Select the projects to keep. You can add folders before selecting.")
             if confirm("Add projects from more folders?"):
                 existing_roots = {p.root for p in projects}
-                projects += [p for p in discover(roots_to_scan()) if p.root not in existing_roots]
+                projects += [p for p in discover(roots_to_scan(), inventory=False) if p.root not in existing_roots]
             projects = select_projects(projects)
             if len({p.key for p in projects}) != len(projects):
                 raise ValueError("Added projects have conflicting keys; save a new selection from their common parent folder")

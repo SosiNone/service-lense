@@ -9,8 +9,6 @@ import webbrowser
 from . import __version__
 from .discovery import discover
 from .model import Project
-from .report import write_report
-from .scan import scan
 from .selection import select_projects
 
 
@@ -54,7 +52,7 @@ def save_profile(path: Path, projects: list[Project], overlays: dict[str, list[P
 def load_profile(path: Path) -> tuple[list[Project], dict[str, list[Path]]]:
     path = path.resolve()
     roots, profile_overlays = read_profile(path)
-    projects = [p for p in discover(roots) if p.root in roots]
+    projects = [p for p in discover(roots, inventory=False) if p.root in roots]
     missing = set(roots) - {p.root for p in projects}
     if missing:
         raise ValueError("Saved project roots no longer contain discoverable projects: " + ", ".join(map(str, sorted(missing))))
@@ -72,6 +70,9 @@ def load_profile(path: Path) -> tuple[list[Project], dict[str, list[Path]]]:
 
 def run_scan(projects: list[Project], overlays: dict[str, list[Path]], out: Path, no_open: bool = False) -> int:
     print(f"Analyzing {len(projects)} project(s) locally...", file=sys.stderr)
+    from .report import write_report
+    from .scan import scan
+
     data = scan(projects, overlays)
     write_report(data, out)
     summary = data["summary"]
@@ -122,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             if not args.roots:
                 raise ValueError("Supply at least one local root or --profile")
-            projects = discover(args.roots)
+            projects = discover(args.roots, inventory=False)
             if not projects:
                 raise ValueError("No supported projects or source files found")
             if not args.all:

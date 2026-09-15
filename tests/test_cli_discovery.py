@@ -6,6 +6,56 @@ from pathlib import Path
 from servicelense.cli import main, read_profile, save_profile
 from servicelense.discovery import discover
 from servicelense.report import render_report
+from servicelense.scan import scan
+
+
+def test_selection_discovery_defers_source_checks(make_project, monkeypatch):
+    root = make_project({"pyproject.toml": "", "src/main.py": "",
+                         "child/package.json": "{}", "child/main.ts": ""})
+    original = Path.is_symlink
+
+    def check(path):
+        assert path.suffix not in {".py", ".ts"}, "Source checks must wait until selection"
+        return original(path)
+
+    monkeypatch.setattr(Path, "is_symlink", check)
+    projects = discover([root], inventory=False)
+    assert [p.languages for p in projects] == [["python"], ["typescript"]]
+    assert all(p.files_pending and not p.files for p in projects)
+
+
+def test_deferred_inventory_preserves_ownership_and_skips_nested_trees(make_project, monkeypatch):
+    root = make_project({"loose/main.py": 'import requests\nrequests.get("https://parent.example")',
+                         "child/package.json": "{}", "child/deep/main.ts": 'fetch("https://child.example")'})
+    expected = scan(discover([root])[:1])
+    projects = discover([root], inventory=False)
+    import os
+    original = os.scandir
+
+    def scandir(path):
+        assert Path(path) != root / "child/deep", "Unselected project contents must not be inventoried"
+        return original(path)
+
+    monkeypatch.setattr(os, "scandir", scandir)
+    assert scan(projects[:1]) == expected
+    assert projects[1].files_pending and not projects[1].files
+
+
+def test_cli_selection_happens_before_inventory(make_project, tmp_path, monkeypatch):
+    root = make_project({"a/main.py": 'import requests\nrequests.get("https://a.example")',
+                         "a/pyproject.toml": "", "b/main.py": "", "b/pyproject.toml": ""})
+    monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+
+    def select(projects, **kwargs):
+        assert all(p.files_pending and not p.files for p in projects)
+        return projects[:1]
+
+    monkeypatch.setattr("servicelense.cli.select_projects", select)
+    out = tmp_path / "out"
+    assert main(["scan", str(root), "--no-open", "--out", str(out)]) == 0
+    data = json.loads((out / "dependencies.json").read_text())
+    assert [p["name"] for p in data["projects"]] == ["a"]
+    assert [c["url"] for c in data["calls"]] == ["https://a.example"]
 
 
 def test_discovery_nested_and_overlapping_roots(make_project):

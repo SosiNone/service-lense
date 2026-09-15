@@ -16,6 +16,7 @@ def test_interactive_new_scan_save_and_rerun(make_project, tmp_path, monkeypatch
     monkeypatch.chdir(root)
     def select(projects, *, directory, overlays):
         assert projects
+        assert all(p.files_pending and not p.files for p in projects)
         path = directory / "backend.json"
         if path.exists():
             assert len(projects) == 2  # A fresh discovery sees projects added since saving.

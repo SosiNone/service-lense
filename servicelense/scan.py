@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from .config import Configuration
+from .discovery import collect_sources
 from .model import Project, stable_id
 from .resolver import Resolver
 from .syntax import adapters
@@ -34,6 +35,9 @@ def origin(text: str) -> str | None:
 
 
 def scan(projects: list[Project], overlays: dict[str, list[Path]] | None = None) -> dict:
+    for project in projects:
+        if project.files_pending:
+            collect_sources(project)
     parsers = adapters()
     output: dict = {"schema_version": 1, "tool": "Service Lense", "projects": [], "destinations": [],
                     "calls": [], "diagnostics": []}

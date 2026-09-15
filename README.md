@@ -118,6 +118,8 @@ A parent project's checkbox controls only that project's own files. Nested proje
 
 Generated directories such as `.angular`, `node_modules`, `bin` and `obj` are excluded from discovery.
 
+Before selection, discovery walks folders to identify projects and preview their languages from filenames. Source-file checks, file inventory, configuration loading and analysis happen after selection, for selected projects only. Nested projects remain separate even when their parent is selected.
+
 For unattended scans, suppress the browser launch with `--no-open`:
 
 ```sh
