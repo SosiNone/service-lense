@@ -41,7 +41,7 @@ def choose(label: str, options: list[str]) -> int | None:
 
 
 def roots_to_scan() -> list[Path]:
-    roots = [local_path(ask("Folder to scan", str(Path.cwd())))]
+    roots = [local_path(ask("Folder to scan", str(Path.cwd().parent)))]
     while True:
         value = ask("Another folder (Enter to continue)")
         if not value:

@@ -72,7 +72,7 @@ def test_interactive_rename_and_confirmed_delete(make_project, monkeypatch):
 
 def test_interactive_invalid_root_can_retry(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
-    answers(monkeypatch, [str(tmp_path / "missing"), "", "y", "", "", "n"])
+    answers(monkeypatch, [str(tmp_path / "missing"), "", "y", str(tmp_path), "", "n"])
     assert main([]) == 0
     assert "Could not complete this action" in capsys.readouterr().out
 
