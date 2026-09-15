@@ -54,6 +54,7 @@ class ProjectTree:
                 node = root
                 node.members.add(i)
                 for part in projects[i].root.relative_to(base).parts:
+                    self.collapsed.add(node.path)
                     path = node.path / part
                     child = next((c for c in node.children if c.path == path), None)
                     if child is None:
