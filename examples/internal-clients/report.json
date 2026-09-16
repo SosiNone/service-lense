@@ -1,0 +1,328 @@
+{
+  "schema_version": 2,
+  "analysis": {
+    "scope": "Synthetic checkout and inventory projects; locally available client package only.",
+    "coverage": {
+      "status": "partial",
+      "inspected": [
+        "app/main.py and config.example.json",
+        "inventory/routes.py",
+        "packages/company_clients/__init__.py"
+      ],
+      "excluded": [
+        "Credential files and runtime execution"
+      ],
+      "gaps": [
+        "company_audit implementation is unavailable.",
+        "Database, broker, cache and storage transports are injected; their deployed destinations and protocols are unknown."
+      ]
+    },
+    "packages": [
+      {
+        "id": "clients",
+        "name": "company_clients",
+        "version": null,
+        "root": "packages/company_clients",
+        "availability": "available",
+        "notes": "Local illustrative client source; transports are injected."
+      },
+      {
+        "id": "audit",
+        "name": "company_audit",
+        "version": null,
+        "root": null,
+        "availability": "unavailable",
+        "notes": "Only the caller import and registration are available."
+      }
+    ]
+  },
+  "projects": [
+    {
+      "id": "checkout",
+      "name": "Checkout",
+      "root": "app",
+      "languages": [
+        "python"
+      ]
+    },
+    {
+      "id": "inventory",
+      "name": "Inventory",
+      "root": "inventory",
+      "languages": [
+        "python"
+      ]
+    }
+  ],
+  "destinations": [
+    {
+      "id": "inventory",
+      "label": "Inventory API",
+      "kind": "service_api",
+      "project_id": "inventory",
+      "endpoint": "https://inventory.internal",
+      "protocol": "https"
+    },
+    {
+      "id": "database",
+      "label": "Orders database",
+      "kind": "database",
+      "project_id": null,
+      "endpoint": null,
+      "protocol": null
+    },
+    {
+      "id": "events",
+      "label": "Order events",
+      "kind": "messaging",
+      "project_id": null,
+      "endpoint": null,
+      "protocol": null
+    },
+    {
+      "id": "cache",
+      "label": "Catalog cache",
+      "kind": "cache",
+      "project_id": null,
+      "endpoint": null,
+      "protocol": null
+    },
+    {
+      "id": "storage",
+      "label": "Receipt storage",
+      "kind": "storage",
+      "project_id": null,
+      "endpoint": null,
+      "protocol": null
+    },
+    {
+      "id": "audit",
+      "label": "Audit client destination",
+      "kind": "service_api",
+      "project_id": null,
+      "endpoint": null,
+      "protocol": null
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn-inventory",
+      "project_id": "checkout",
+      "destination_id": "inventory",
+      "kind": "service_api",
+      "client": "InventoryClient",
+      "package_id": "clients",
+      "operation": "reserve",
+      "strength": "supported",
+      "usage": "used",
+      "evidence": [
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 12,
+          "explanation": "Invokes InventoryClient through the checkout call site."
+        },
+        {
+          "source_type": "package",
+          "source_id": "clients",
+          "file": "__init__.py",
+          "line": 6,
+          "explanation": "The wrapper delegates reserve to its transport."
+        },
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 6,
+          "explanation": "Constructs InventoryClient with INVENTORY_ENDPOINT."
+        },
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "config.example.json",
+          "line": 2,
+          "explanation": "Non-secret example configuration supplies the inventory origin."
+        },
+        {
+          "source_type": "project",
+          "source_id": "inventory",
+          "file": "routes.py",
+          "line": 1,
+          "explanation": "Inventory declares the matching service origin."
+        },
+        {
+          "source_type": "project",
+          "source_id": "inventory",
+          "file": "routes.py",
+          "line": 5,
+          "explanation": "Inventory registers the reserve route."
+        }
+      ],
+      "uncertainty_reasons": [
+        "Origin is from example configuration; deployment may override it."
+      ]
+    },
+    {
+      "id": "conn-database",
+      "project_id": "checkout",
+      "destination_id": "database",
+      "kind": "database",
+      "client": "Database",
+      "package_id": "clients",
+      "operation": "execute INSERT",
+      "strength": "supported",
+      "usage": "used",
+      "evidence": [
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 13,
+          "explanation": "Invokes Database through the checkout call site."
+        },
+        {
+          "source_type": "package",
+          "source_id": "clients",
+          "file": "__init__.py",
+          "line": 11,
+          "explanation": "The wrapper delegates execute INSERT to its transport."
+        }
+      ],
+      "uncertainty_reasons": [
+        "Transport destination is injected and unavailable in the inspected scope."
+      ]
+    },
+    {
+      "id": "conn-events",
+      "project_id": "checkout",
+      "destination_id": "events",
+      "kind": "messaging",
+      "client": "EventBus",
+      "package_id": "clients",
+      "operation": "publish orders.created",
+      "strength": "supported",
+      "usage": "used",
+      "evidence": [
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 14,
+          "explanation": "Invokes EventBus through the checkout call site."
+        },
+        {
+          "source_type": "package",
+          "source_id": "clients",
+          "file": "__init__.py",
+          "line": 16,
+          "explanation": "The wrapper delegates publish orders.created to its transport."
+        }
+      ],
+      "uncertainty_reasons": [
+        "Transport destination is injected and unavailable in the inspected scope."
+      ]
+    },
+    {
+      "id": "conn-cache",
+      "project_id": "checkout",
+      "destination_id": "cache",
+      "kind": "cache",
+      "client": "Cache",
+      "package_id": "clients",
+      "operation": "get catalog",
+      "strength": "supported",
+      "usage": "used",
+      "evidence": [
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 15,
+          "explanation": "Invokes Cache through the checkout call site."
+        },
+        {
+          "source_type": "package",
+          "source_id": "clients",
+          "file": "__init__.py",
+          "line": 21,
+          "explanation": "The wrapper delegates get catalog to its transport."
+        }
+      ],
+      "uncertainty_reasons": [
+        "Transport destination is injected and unavailable in the inspected scope."
+      ]
+    },
+    {
+      "id": "conn-storage",
+      "project_id": "checkout",
+      "destination_id": "storage",
+      "kind": "storage",
+      "client": "Storage",
+      "package_id": "clients",
+      "operation": "put receipts/order",
+      "strength": "supported",
+      "usage": "used",
+      "evidence": [
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 16,
+          "explanation": "Invokes Storage through the checkout call site."
+        },
+        {
+          "source_type": "package",
+          "source_id": "clients",
+          "file": "__init__.py",
+          "line": 26,
+          "explanation": "The wrapper delegates put receipts/order to its transport."
+        }
+      ],
+      "uncertainty_reasons": [
+        "Transport destination is injected and unavailable in the inspected scope."
+      ]
+    },
+    {
+      "id": "conn-audit",
+      "project_id": "checkout",
+      "destination_id": "audit",
+      "kind": "service_api",
+      "client": "AuditClient",
+      "package_id": "audit",
+      "operation": null,
+      "strength": "unknown",
+      "usage": "configured",
+      "evidence": [
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 7,
+          "explanation": "Registers AuditClient using AUDIT_DESTINATION; no invocation found."
+        }
+      ],
+      "uncertainty_reasons": [
+        "Implementation unavailable; destination kind is provisional based on the audit client registration. No call site or protocol established."
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "missing-audit",
+      "severity": "warning",
+      "code": "PACKAGE_SOURCE_UNAVAILABLE",
+      "message": "Audit client implementation was not available locally. Only registration is established.",
+      "project_id": "checkout",
+      "evidence": [
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 2,
+          "explanation": "Imports the audit client from a package with no local source."
+        }
+      ]
+    }
+  ]
+}

@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const {readFileSync} = require("node:fs");
 const {JSDOM, ResourceLoader, VirtualConsole} = require("jsdom");
 
-const html = readFileSync("reports/example/report.html", "utf8");
+const html = readFileSync("reports/v2-example/report.html", "utf8");
 
 function openReport(source = html) {
   const attempts = [], errors = [];
@@ -55,7 +55,7 @@ test("report sections expose project, destination, diagnostic and complete scan 
     assert.equal(document.getElementById("view-requests").hidden, false);
     assert.equal(document.getElementById("project").value, data.projects[0].id);
     assert.equal(document.querySelectorAll("#calls tr").length,
-      data.calls.filter(call => call.project_id === data.projects[0].id).length);
+      data.connections.filter(call => call.project_id === data.projects[0].id).length);
     assert.deepEqual(errors, []);
   } finally { dom.window.close(); }
 });
@@ -78,13 +78,14 @@ test("theme switch defaults to dark and preserves report navigation and selectio
 });
 
 test("empty scans provide explicit empty states in each inventory", () => {
-  const data = {tool: "Service Lense", schema_version: 1, projects: [], destinations: [],
-    calls: [], diagnostics: [], summary: {projects: 0, calls: 0, destinations: 0, resolved: 0, partial: 0, unresolved: 0}};
+  const data = {schema_version: 2, projects: [], destinations: [], connections: [], diagnostics: [],
+    analysis: {scope: "empty", coverage: {status:"partial", inspected:[], excluded:[], gaps:["No source available"]}, packages:[]},
+    summary: {projects:0, connections:0, destinations:0, configured:0}};
   const source = html.replace(/(<script id="report-data" type="application\/json">)[\s\S]*?(<\/script>)/,
     (_, a, b) => a + JSON.stringify(data) + b);
   const {dom, document, errors} = openReport(source);
   try {
-    assert.match(document.getElementById("project-records").textContent, /No projects scanned/);
+    assert.match(document.getElementById("project-records").textContent, /No projects included/);
     assert.match(document.getElementById("destination-records").textContent, /No destinations found/);
     assert.match(document.getElementById("diagnostics").textContent, /No diagnostics reported/);
     assert.equal(document.getElementById("no-calls").classList.contains("hidden"), false);
@@ -96,7 +97,7 @@ test("report renders graph and every call without resources or network APIs", ()
   const {dom, document, attempts, errors} = openReport();
   try {
     const data = JSON.parse(document.querySelector("#report-data").textContent);
-    assert.equal(document.querySelectorAll("#calls tr").length, data.calls.length);
+    assert.equal(document.querySelectorAll("#calls tr").length, data.connections.length);
     assert.ok(document.querySelectorAll("svg .edge").length >= 5);
     assert.equal(document.querySelectorAll(".stat").length, 4);
     assert.deepEqual(attempts, []);
@@ -105,22 +106,24 @@ test("report renders graph and every call without resources or network APIs", ()
   } finally { dom.window.close(); }
 });
 
-test("search, project, language and status filters combine and reset", () => {
+test("search, project, kind, strength and usage filters combine and reset", () => {
   const {dom, document, attempts, errors} = openReport();
   try {
     const query = id => document.getElementById(id);
-    change(dom, query("search"), "orders.internal", "input");
-    assert.equal(document.querySelectorAll("#calls tr").length, 2);
-    change(dom, query("language"), "typescript");
+    change(dom, query("search"), "inventory.internal", "input");
     assert.equal(document.querySelectorAll("#calls tr").length, 1);
-    change(dom, query("status"), "unresolved");
+    change(dom, query("kind"), "cache");
     assert.equal(document.querySelectorAll("#calls tr").length, 0);
-    assert.ok(!query("no-calls").classList.contains("hidden"));
     query("reset").click();
-    change(dom, query("project"), query("project").options[1].value);
-    assert.ok(document.querySelectorAll("#calls tr").length > 0);
+    change(dom, query("usage"), "configured");
+    assert.equal(document.querySelectorAll("#calls tr").length, 1);
+    change(dom, query("status"), "supported");
+    assert.equal(document.querySelectorAll("#calls tr").length, 0);
     query("reset").click();
-    assert.equal(document.querySelectorAll("#calls tr").length, 8);
+    change(dom, query("project"), "inventory");
+    assert.equal(document.querySelectorAll("#calls tr").length, 0);
+    query("reset").click();
+    assert.equal(document.querySelectorAll("#calls tr").length, 6);
     assert.deepEqual(attempts, []);
     assert.deepEqual(errors, []);
   } finally { dom.window.close(); }
@@ -134,7 +137,7 @@ test("table and graph selection expose evidence and reasons", () => {
     assert.ok(document.querySelectorAll("#detail .evidence li").length > 0);
     assert.ok(document.querySelector("#calls tr.selected"));
     const status = document.getElementById("status");
-    change(dom, status, "unresolved");
+    change(dom, status, "unknown");
     document.querySelector("svg .edge").dispatchEvent(new dom.window.KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
     assert.ok(document.querySelector("#detail .reason"));
     assert.deepEqual(attempts, []);
@@ -144,10 +147,10 @@ test("table and graph selection expose evidence and reasons", () => {
 
 test("hostile analyzed strings remain inert in graph, table and detail", () => {
   const payload = JSON.parse(html.match(/<script id="report-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
-  const hostile = '<img src="https://evil.example/x" onerror="window.pwned=true">';
+  const hostile = '</script><script>window.pwned=true</script><img src="https://evil.example/x" onerror="window.pwned=true">';
   payload.projects[0].name = hostile;
-  payload.calls[0].url = hostile;
-  payload.calls[0].evidence[0].detail = hostile;
+  payload.destinations[0].label = hostile;
+  payload.connections[0].evidence[0].explanation = hostile;
   const safe = JSON.stringify(payload).replaceAll("<", "\\u003c").replaceAll(">", "\\u003e");
   const source = html.replace(/(<script id="report-data" type="application\/json">)[\s\S]*?(<\/script>)/, (_, a, b) => a + safe + b);
   const {dom, document, attempts, errors} = openReport(source);
@@ -194,7 +197,7 @@ test("map navigation zooms, pans, suppresses drag selection, and resets after fi
     assert.equal(svg.getAttribute("viewBox"),initial);
     svg.dispatchEvent(new dom.window.KeyboardEvent("keydown",{key:"ArrowRight"}));
     assert.ok(box()[0]>0);
-    change(dom,document.getElementById("status"),"resolved");
+    change(dom,document.getElementById("status"),"supported");
     assert.equal(document.getElementById("map-zoom").textContent,"100%");
     change(dom,document.getElementById("search"),"no-such-call","input");
     assert.equal(document.getElementById("map-fit").disabled,true);
@@ -210,7 +213,7 @@ test("map offers a return to all projects after selecting a project", () => {
   try {
     const back=document.getElementById("map-overview");
     assert.equal(back.hidden,true);
-    change(dom,document.getElementById("status"),"resolved");
+    change(dom,document.getElementById("status"),"supported");
     const count=document.querySelectorAll("#calls tr").length;
     document.querySelector("#graph .node:not(.target)").dispatchEvent(new dom.window.MouseEvent("click",{bubbles:true}));
     assert.equal(back.hidden,false);
@@ -218,10 +221,27 @@ test("map offers a return to all projects after selecting a project", () => {
     document.getElementById("map-zoom-in").click();
     back.click();
     assert.equal(document.getElementById("project").value,"");
-    assert.equal(document.getElementById("status").value,"resolved");
+    assert.equal(document.getElementById("status").value,"supported");
     assert.equal(document.querySelectorAll("#calls tr").length,count);
     assert.equal(document.getElementById("map-zoom").textContent,"100%");
     assert.equal(back.hidden,true);
     assert.deepEqual(errors,[]);
+  } finally {dom.window.close();}
+});
+
+
+test("coverage, package provenance, unknown endpoints and configured usage are visible", () => {
+  const {dom, document, errors} = openReport();
+  try {
+    assert.match(document.getElementById("analysis-coverage").textContent, /company_audit/);
+    assert.match(document.getElementById("analysis-coverage").textContent, /unavailable/);
+    change(dom, document.getElementById("usage"), "configured");
+    document.querySelector("#calls button").click();
+    assert.match(document.getElementById("detail").textContent, /configured/);
+    assert.match(document.getElementById("detail").textContent, /Unknown/);
+    document.getElementById("reset").click();
+    document.querySelector("#calls button").click();
+    assert.match(document.getElementById("detail").textContent, /package: company_clients/);
+    assert.deepEqual(errors, []);
   } finally {dom.window.close();}
 });

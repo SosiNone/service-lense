@@ -17,7 +17,8 @@ jobs:
       - run: uv sync --locked
       - run: uv run --locked --offline pytest
       - run: uv build
-      - run: uv run --locked --offline servicelense scan examples/workspace --all --no-open --out reports/example
+      - run: uv run --locked --offline servicelense validate examples/internal-clients/report.json
+      - run: uv run --locked --offline servicelense render examples/internal-clients/report.json --no-open --out reports/v2-example
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

@@ -1,0 +1,119 @@
+{
+  "schema_version": 2,
+  "analysis": {
+    "scope": "Inventory connection excerpt from the synthetic internal-client workspace.",
+    "coverage": {
+      "status": "partial",
+      "inspected": [
+        "app/main.py and config.example.json",
+        "inventory/routes.py",
+        "packages/company_clients/__init__.py"
+      ],
+      "excluded": [
+        "Credential files and runtime execution"
+      ],
+      "gaps": [
+        "Only the inventory connection is included in this small illustrative report."
+      ]
+    },
+    "packages": [
+      {
+        "id": "clients",
+        "name": "company_clients",
+        "version": null,
+        "root": "packages/company_clients",
+        "availability": "available",
+        "notes": "Local illustrative client source; transports are injected."
+      }
+    ]
+  },
+  "projects": [
+    {
+      "id": "checkout",
+      "name": "Checkout",
+      "root": "app",
+      "languages": [
+        "python"
+      ]
+    },
+    {
+      "id": "inventory",
+      "name": "Inventory",
+      "root": "inventory",
+      "languages": [
+        "python"
+      ]
+    }
+  ],
+  "destinations": [
+    {
+      "id": "inventory",
+      "label": "Inventory API",
+      "kind": "service_api",
+      "project_id": "inventory",
+      "endpoint": "https://inventory.internal",
+      "protocol": "https"
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn-inventory",
+      "project_id": "checkout",
+      "destination_id": "inventory",
+      "kind": "service_api",
+      "client": "InventoryClient",
+      "package_id": "clients",
+      "operation": "reserve",
+      "strength": "supported",
+      "usage": "used",
+      "evidence": [
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 12,
+          "explanation": "Invokes InventoryClient through the checkout call site."
+        },
+        {
+          "source_type": "package",
+          "source_id": "clients",
+          "file": "__init__.py",
+          "line": 6,
+          "explanation": "The wrapper delegates reserve to its transport."
+        },
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "main.py",
+          "line": 6,
+          "explanation": "Constructs InventoryClient with INVENTORY_ENDPOINT."
+        },
+        {
+          "source_type": "project",
+          "source_id": "checkout",
+          "file": "config.example.json",
+          "line": 2,
+          "explanation": "Non-secret example configuration supplies the inventory origin."
+        },
+        {
+          "source_type": "project",
+          "source_id": "inventory",
+          "file": "routes.py",
+          "line": 1,
+          "explanation": "Inventory declares the matching service origin."
+        },
+        {
+          "source_type": "project",
+          "source_id": "inventory",
+          "file": "routes.py",
+          "line": 5,
+          "explanation": "Inventory registers the reserve route."
+        }
+      ],
+      "uncertainty_reasons": [
+        "Origin is from example configuration; deployment may override it."
+      ]
+    }
+  ],
+  "diagnostics": []
+}

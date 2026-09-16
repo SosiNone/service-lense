@@ -1,0 +1,4 @@
+{
+  "INVENTORY_ENDPOINT": "https://inventory.internal",
+  "AUDIT_DESTINATION": "configured-at-deployment"
+}
