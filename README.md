@@ -4,6 +4,34 @@ Map project connections with Codex, then validate and explore the findings offli
 
 The repository-hosted `service-lense` skill traces application code and available internal client source. Service Lense validates the resulting JSON and generates an interactive report covering service APIs, databases, messaging, caches, and storage. The CLI does not call an LLM or require another login. Analysis uses your active Codex session and its existing Enterprise controls.
 
+## Quickstart
+
+Install the CLI from this checkout (Python 3.11+ and [uv](https://docs.astral.sh/uv/) are required):
+
+```sh
+uv tool install .
+```
+
+Copy the skill into the repository you want to inspect:
+
+```sh
+mkdir -p /path/to/your-project/.agents/skills
+cp -R skills/service-lense /path/to/your-project/.agents/skills/
+cd /path/to/your-project
+```
+
+Open the project in Codex and ask:
+
+> Use $service-lense to map this project's connections and generate a report.
+
+The skill inspects the local source, writes a version-2 JSON report, validates it, and generates a self-contained HTML report. It reports the output paths when complete; open `report.html` in a browser to explore the results.
+
+Already have a Service Lense JSON report? Run the CLI without arguments and follow its prompts:
+
+```sh
+servicelense
+```
+
 ## Setup and team installation
 
 Install the CLI from this checkout (Python 3.11+):
