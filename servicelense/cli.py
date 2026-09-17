@@ -9,11 +9,12 @@ from . import __version__
 from .report import existing_output, write_report
 from .validation import ReportError, load_report
 
-GUIDANCE = '''Use the repository's skills/service-lense skill in your existing Codex session.
-Ask: "Use $service-lense to map this project's connections."
-Codex inspects local source and writes a version-2 JSON report. Service Lense
+GUIDANCE = '''Install the service-lense skill in your personal ~/.agents/skills directory.
+Open a separate output folder in Codex and ask:
+"Use $service-lense to analyze /path/to/project and save the report here. Leave the project untouched."
+Codex reads local source and writes a version-2 JSON report outside the project. Service Lense
 validates the format and renders it offline; no additional LLM login is used.
-See README.md for team installation and skills/service-lense/references/report-format.md
+See README.md for installation and the skill's references/report-format.md
 for the contract. Validation does not establish that an inference is correct.'''
 MIGRATION = 'The scan command was removed. Regenerate JSON using the service-lense Codex skill, then use validate or render. Saved profiles are no longer read; existing HTML reports remain usable.'
 

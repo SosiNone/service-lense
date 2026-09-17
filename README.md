@@ -12,27 +12,35 @@ Install the CLI from this checkout (Python 3.11+ and [uv](https://docs.astral.sh
 uv tool install .
 ```
 
-Copy the skill into the repository you want to inspect:
+Install the skill once in your personal Codex skills directory (Linux/macOS):
 
 ```sh
-mkdir -p /path/to/your-project/.agents/skills
-cp -R skills/service-lense /path/to/your-project/.agents/skills/
-cd /path/to/your-project
+mkdir -p "$HOME/.agents/skills"
+cp -R skills/service-lense "$HOME/.agents/skills/"
 ```
 
-Open the project in Codex and ask:
+This makes the skill available across projects without adding files to them. Codex supports this [personal skill location](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills); restart Codex if the skill does not appear.
 
-> Use $service-lense to map this project's connections and generate a report.
+Create a separate folder for analysis output:
 
-The skill inspects the local source, writes a version-2 JSON report, validates it, and generates a self-contained HTML report. It reports the output paths when complete; open `report.html` in a browser to explore the results.
+```sh
+mkdir -p "$HOME/service-lense-reports"
+cd "$HOME/service-lense-reports"
+```
 
-Already have a Service Lense JSON report? Run the CLI without arguments and follow its prompts:
+Open that folder in Codex, then point it at the project you want to inspect:
+
+> Use $service-lense to analyze /path/to/your-project. Leave that project untouched and save the report in this output folder.
+
+The skill reads the project's local source, writes and validates a version-2 JSON report, and generates a self-contained HTML report in the separate output folder. It reports the output paths when complete; open `report.html` in a browser to explore the results. Project directories remain read only, including their configuration and Git metadata.
+
+Already have a Service Lense JSON report? Run the CLI without arguments from your output folder and follow its prompts:
 
 ```sh
 servicelense
 ```
 
-## Setup and team installation
+## Installation details
 
 Install the CLI from this checkout (Python 3.11+):
 
@@ -42,13 +50,13 @@ uv sync --locked
 
 Activate `.venv` (`source .venv/bin/activate` on Linux/macOS, `.\.venv\Scripts\Activate.ps1` on Windows). Alternatively, run `uv run --locked servicelense` from this checkout or install the CLI with `uv tool install .`.
 
-Copy the entire [`skills/service-lense`](skills/service-lense) folder into the target project's `.agents/skills/service-lense` directory, including `references/`. Commit that copy in the target repository to share it with the team. Keep the CLI and skill from the same Service Lense revision. For a personal installation, copy the folder to your Codex skills directory instead. Installation is manual; Service Lense does not modify Codex settings.
+Copy the entire [`skills/service-lense`](skills/service-lense) folder, including `references/`, into your personal `~/.agents/skills` directory as shown above. On Windows, use `$HOME\.agents\skills` in PowerShell. Each team member installs the CLI and skill locally from the same Service Lense revision; target repositories need no setup or committed files. Installation is manual; Service Lense does not modify Codex settings.
 
 In Codex, ask:
 
-> Use $service-lense to map this project's connections and generate a report.
+> Use $service-lense to analyze /path/to/your-project and save the report in this output folder. Leave the analyzed project untouched.
 
-You can also name multiple local projects and available package source locations. The skill defaults to the current project and asks when scope is ambiguous. It inspects local source without modifying application code, downloading packages, running the application, or doing external lookups. Identifiable credential files are excluded. The skill records missing package source and incomplete tracing as coverage gaps.
+You can also name multiple local projects and available package source locations. The skill defaults to the current project and asks when scope is ambiguous. All generated files go outside the analyzed project roots; if no separate writable output location is available, the skill asks for one. It inspects local source without modifying project files, downloading packages, running the application, or doing external lookups. Identifiable credential files are excluded. The skill records missing package source and incomplete tracing as coverage gaps.
 
 ## Use the CLI
 
